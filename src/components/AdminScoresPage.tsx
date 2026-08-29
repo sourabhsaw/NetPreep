@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTest } from '../context/TestContext';
 import { ExamSubject, SubmittedTestRecord } from '../types';
 import {
@@ -25,8 +25,18 @@ import {
   CheckCircle,
   Database,
   Code2,
-  Layers
+  Layers,
+  Lock,
+  Unlock,
+  KeyRound,
+  AlertCircle,
+  LogOut,
+  EyeOff,
+  ArrowLeft,
+  ShieldAlert
 } from 'lucide-react';
+
+const ADMIN_DEFAULT_PIN = '2026';
 
 export const AdminScoresPage: React.FC = () => {
   const {
@@ -38,6 +48,19 @@ export const AdminScoresPage: React.FC = () => {
     setCurrentView,
     isFirestoreConnected
   } = useTest();
+
+  // Admin PIN Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('netprep_admin_authenticated') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<'All' | 'Economics' | 'Computer Science'>('All');
@@ -57,6 +80,35 @@ export const AdminScoresPage: React.FC = () => {
     accuracy: 80,
     timeTakenMinutes: 110
   });
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinInput.trim() === ADMIN_DEFAULT_PIN) {
+      try {
+        sessionStorage.setItem('netprep_admin_authenticated', 'true');
+      } catch (err) {
+        console.error('Failed to write to sessionStorage:', err);
+      }
+      setIsAdminAuthenticated(true);
+      setPinError('');
+      setPinInput('');
+    } else {
+      setPinError('Access Denied / Unauthorized Access. Incorrect 4-Digit Security PIN.');
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 600);
+    }
+  };
+
+  const handleLockAdmin = () => {
+    try {
+      sessionStorage.removeItem('netprep_admin_authenticated');
+    } catch (err) {
+      console.error('Failed to remove from sessionStorage:', err);
+    }
+    setIsAdminAuthenticated(false);
+    setPinInput('');
+    setPinError('');
+  };
 
   // Filtered records
   const filteredRecords = submittedRecords.filter((record) => {
@@ -226,6 +278,132 @@ export const AdminScoresPage: React.FC = () => {
     });
   };
 
+  // If not authenticated, render the Security PIN Verification Gate
+  if (!isAdminAuthenticated) {
+    return (
+      <div id="admin-pin-auth-gate" className="max-w-xl mx-auto px-4 py-12 sm:py-16">
+        <div className={`bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-200/80 space-y-6 text-center relative overflow-hidden transition-transform ${isShaking ? 'animate-bounce' : ''}`}>
+          
+          {/* Top Security Banner */}
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600 shadow-xs">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+              <span>Admin Authentication Required</span>
+            </div>
+            <h2 className="font-['Outfit'] font-extrabold text-2xl sm:text-3xl text-slate-900 tracking-tight">
+              Enter Admin Security PIN
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+              Candidate phone numbers, email addresses, and detailed test logs are protected behind administrative security controls.
+            </p>
+          </div>
+
+          {/* Error Alert */}
+          {pinError && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-2xl flex items-center gap-2.5 text-left animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{pinError}</span>
+            </div>
+          )}
+
+          {/* PIN Form */}
+          <form onSubmit={handleVerifyPin} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                4-Digit Security Passcode
+              </label>
+
+              <div className="relative max-w-xs mx-auto">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  maxLength={6}
+                  autoFocus
+                  placeholder="• • • •"
+                  value={pinInput}
+                  onChange={(e) => {
+                    setPinInput(e.target.value);
+                    if (pinError) setPinError('');
+                  }}
+                  className="w-full text-center text-2xl sm:text-3xl font-mono tracking-[0.5em] font-bold py-3.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-600 focus:bg-white rounded-2xl focus:outline-hidden transition-all placeholder:text-slate-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1.5 cursor-pointer"
+                  title={showPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Numpad for convenience */}
+            <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto pt-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    if (key === 'C') {
+                      setPinInput('');
+                    } else if (key === '⌫') {
+                      setPinInput((prev) => prev.slice(0, -1));
+                    } else {
+                      if (pinInput.length < 6) {
+                        setPinInput((prev) => prev + key);
+                      }
+                    }
+                    if (pinError) setPinError('');
+                  }}
+                  className="py-2.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-800 font-['Outfit'] font-bold text-sm rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-2 space-y-3">
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer group"
+              >
+                <KeyRound className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                <span>Verify & Unlock Admin Logs</span>
+              </button>
+
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinInput('2026');
+                    if (pinError) setPinError('');
+                  }}
+                  className="text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-2 cursor-pointer"
+                >
+                  Fill Default PIN (2026)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('home')}
+                  className="text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Home</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="admin-scores-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       
@@ -245,6 +423,11 @@ export const AdminScoresPage: React.FC = () => {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 <span>Firestore Real-Time Sync Active</span>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-200 text-xs font-medium border border-indigo-400/20">
+                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Authenticated (PIN: ****)</span>
               </div>
             </div>
 
@@ -273,6 +456,15 @@ export const AdminScoresPage: React.FC = () => {
             >
               <Plus className="w-4 h-4" />
               <span>Record New Score</span>
+            </button>
+
+            <button
+              onClick={handleLockAdmin}
+              className="px-3.5 py-2.5 bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-200 text-xs sm:text-sm font-bold rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Lock Admin Session"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Lock Session</span>
             </button>
           </div>
         </div>

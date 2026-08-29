@@ -12,7 +12,8 @@ import {
   PlayCircle,
   FileCheck2,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -29,16 +30,31 @@ export const Navbar: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Check if admin is currently authenticated in session
+  const isAdminAuthenticated = (() => {
+    try {
+      return typeof window !== 'undefined' && sessionStorage.getItem('netprep_admin_authenticated') === 'true';
+    } catch {
+      return false;
+    }
+  })();
+
   // If in the middle of a CBT test, show a focused exam header
   if (isTestActive) {
     return null; // The CBT interface has its own dedicated exam navigation
   }
 
-  const navItems: { id: AppView; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const navItems: { id: AppView; label: string; icon: React.ReactNode; badge?: number; isProtected?: boolean }[] = [
     { id: 'home', label: 'Home', icon: <GraduationCap className="w-4 h-4" /> },
     { id: 'tests', label: 'Test Series', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'dashboard', label: 'Student Portal', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'admin_scores', label: 'Admin Logs', icon: <ShieldCheck className="w-4 h-4" />, badge: submittedRecords.length },
+    { 
+      id: 'admin_scores', 
+      label: 'Admin Logs', 
+      icon: isAdminAuthenticated ? <ShieldCheck className="w-4 h-4 text-emerald-600" /> : <Lock className="w-4 h-4 text-amber-500" />, 
+      badge: submittedRecords.length,
+      isProtected: !isAdminAuthenticated
+    },
     { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-4 h-4" /> },
     { id: 'about_contact', label: 'About & Support', icon: <PhoneCall className="w-4 h-4" /> },
   ];
