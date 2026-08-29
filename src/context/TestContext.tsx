@@ -6,7 +6,8 @@ import {
   TestResult,
   StudentProfile,
   QuestionState,
-  SubmittedTestRecord
+  SubmittedTestRecord,
+  ExamSubject
 } from '../types';
 import { getQuestionsForTest, mockTest01Questions } from '../data/questionsData';
 import { MOCK_TESTS_CATALOG, INITIAL_STUDENT_PROFILE } from '../data/mockTestsData';
@@ -54,6 +55,11 @@ interface TestContextType {
   bookmarks: number[];
   toggleBookmark: (questionId: number) => void;
   
+  // Subject Navigation & Filters
+  selectedSubjectFilter: ExamSubject | 'All';
+  setSelectedSubjectFilter: (subject: ExamSubject | 'All') => void;
+  navigateToSubjectTests: (subject: ExamSubject) => void;
+
   // Admin Submitted Scores Log
   submittedRecords: SubmittedTestRecord[];
   deleteSubmittedRecord: (id: string) => Promise<void>;
@@ -83,6 +89,33 @@ interface TestContextType {
 
 const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
   {
+    id: 'rec_init_cs_1',
+    studentName: 'Vikramaditya Roy',
+    phoneNumber: '9845123980',
+    phone: '9845123980',
+    email: 'vikram.cs@example.com',
+    studentEmail: 'vikram.cs@example.com',
+    studentRoll: 'UGC-NET-2026-6192',
+    testId: 101,
+    testTitle: 'UGC NET Computer Science — Mock Test 01',
+    subject: 'Computer Science',
+    score: 168,
+    maxScore: 200,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 84,
+    wrongCount: 11,
+    unattemptedCount: 5,
+    accuracy: 88,
+    percentile: 96.5,
+    timeTaken: '104 min',
+    timeTakenMinutes: 104,
+    timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
+    formattedDate: 'Today, 03:20 PM',
+    strongAreas: ['Data Structures & Algorithms — 95%', 'Operating Systems — 90%'],
+    weakAreas: ['Theory of Computation — 60%']
+  },
+  {
     id: 'rec_init_1',
     studentName: 'Rahul Sharma',
     phoneNumber: '9876543210',
@@ -92,6 +125,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     studentRoll: 'UGC-NET-2026-8941',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
+    subject: 'Economics',
     score: 142,
     maxScore: 200,
     totalMarks: 200,
@@ -109,6 +143,33 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     weakAreas: ['Econometrics — 50%', 'Statistics — 60%']
   },
   {
+    id: 'rec_init_cs_2',
+    studentName: 'Sneha Venkatesh',
+    phoneNumber: '9940128765',
+    phone: '9940128765',
+    email: 'sneha.gate@example.com',
+    studentEmail: 'sneha.gate@example.com',
+    studentRoll: 'UGC-NET-2026-9043',
+    testId: 101,
+    testTitle: 'UGC NET Computer Science — Mock Test 01',
+    subject: 'Computer Science',
+    score: 176,
+    maxScore: 200,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 88,
+    wrongCount: 8,
+    unattemptedCount: 4,
+    accuracy: 92,
+    percentile: 98.1,
+    timeTaken: '110 min',
+    timeTakenMinutes: 110,
+    timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+    formattedDate: 'Today, 11:30 AM',
+    strongAreas: ['DBMS — 95%', 'Computer Networks — 90%'],
+    weakAreas: ['Discrete Mathematics — 65%']
+  },
+  {
     id: 'rec_init_2',
     studentName: 'Ankit Deshmukh',
     phoneNumber: '9823419087',
@@ -118,6 +179,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     studentRoll: 'UGC-NET-2026-3312',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
+    subject: 'Economics',
     score: 184,
     maxScore: 200,
     totalMarks: 200,
@@ -144,6 +206,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     studentRoll: 'UGC-NET-2026-4489',
     testId: 2,
     testTitle: 'UGC NET Economics — Mock Test 02',
+    subject: 'Economics',
     score: 178,
     maxScore: 200,
     totalMarks: 200,
@@ -170,6 +233,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     studentRoll: 'UGC-NET-2026-7821',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
+    subject: 'Economics',
     score: 156,
     maxScore: 200,
     totalMarks: 200,
@@ -228,7 +292,14 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [solutionsFilter, setSolutionsFilter] = useState<'all' | 'wrong' | 'correct' | 'unattempted' | 'marked'>('all');
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string>('All');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<ExamSubject | 'All'>('All');
   const [submittedRecords, setSubmittedRecords] = useState<SubmittedTestRecord[]>([]);
+
+  const navigateToSubjectTests = (subject: ExamSubject) => {
+    setSelectedSubjectFilter(subject);
+    setCurrentView('tests');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Initialize Firebase Auth & Real-Time Firestore Sync
   useEffect(() => {
@@ -674,9 +745,12 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       recommendation = `Practice more questions from ${topWeak}. Focus on numerical problem solving and formula revision.`;
     }
 
+    const currentSubject = selectedTest?.subject || (selectedTest?.title.includes('Computer Science') ? 'Computer Science' : 'Economics');
+
     const calculatedResult: TestResult = {
       testId: selectedTest?.id || 1,
       testTitle: selectedTest?.title || 'UGC NET Economics — Mock Test 01',
+      subject: currentSubject,
       completedAt: new Date().toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
@@ -696,8 +770,8 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timeTakenMinutes,
       userAnswers,
       topicBreakdown: topicStats,
-      strongAreas: strongAreas.length > 0 ? strongAreas : ['Indian Economy — 90%', 'Micro Economics — 87%', 'International Economics — 80%'],
-      weakAreas: weakAreas.length > 0 ? weakAreas : ['Econometrics — 50%', 'Statistics — 60%'],
+      strongAreas: strongAreas.length > 0 ? strongAreas : (currentSubject === 'Computer Science' ? ['Data Structures & Algorithms — 90%', 'DBMS — 85%'] : ['Indian Economy — 90%', 'Micro Economics — 87%']),
+      weakAreas: weakAreas.length > 0 ? weakAreas : (currentSubject === 'Computer Science' ? ['Theory of Computation — 55%'] : ['Econometrics — 50%']),
       recommendation
     };
 
@@ -723,6 +797,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       studentRoll: studentProfile.rollNumber || `UGC-NET-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       testId: selectedTest?.id || 1,
       testTitle: selectedTest?.title || 'UGC NET Economics — Mock Test 01',
+      subject: currentSubject,
       score,
       maxScore: totalMarks,
       totalMarks,
@@ -743,8 +818,8 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         minute: '2-digit',
         hour12: true
       }),
-      strongAreas: strongAreas.length > 0 ? strongAreas : ['Indian Economy — 90%', 'Micro Economics — 87%'],
-      weakAreas: weakAreas.length > 0 ? weakAreas : ['Econometrics — 50%', 'Statistics — 60%']
+      strongAreas: strongAreas.length > 0 ? strongAreas : (currentSubject === 'Computer Science' ? ['Data Structures & Algorithms — 90%', 'DBMS — 85%'] : ['Indian Economy — 90%', 'Micro Economics — 87%']),
+      weakAreas: weakAreas.length > 0 ? weakAreas : (currentSubject === 'Computer Science' ? ['Theory of Computation — 55%'] : ['Econometrics — 50%'])
     };
 
     // 1. Update local records immediately for zero latency
@@ -914,7 +989,10 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         solutionsFilter,
         setSolutionsFilter,
         selectedTopicFilter,
-        setSelectedTopicFilter
+        setSelectedTopicFilter,
+        selectedSubjectFilter,
+        setSelectedSubjectFilter,
+        navigateToSubjectTests
       }}
     >
       {children}

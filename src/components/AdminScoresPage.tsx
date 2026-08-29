@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTest } from '../context/TestContext';
-import { SubmittedTestRecord } from '../types';
+import { ExamSubject, SubmittedTestRecord } from '../types';
 import {
   ShieldCheck,
   Search,
@@ -23,7 +23,9 @@ import {
   Mail,
   Radio,
   CheckCircle,
-  Database
+  Database,
+  Code2,
+  Layers
 } from 'lucide-react';
 
 export const AdminScoresPage: React.FC = () => {
@@ -38,6 +40,7 @@ export const AdminScoresPage: React.FC = () => {
   } = useTest();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<'All' | 'Economics' | 'Computer Science'>('All');
   const [selectedTestFilter, setSelectedTestFilter] = useState<string>('All');
   const [selectedTierFilter, setSelectedTierFilter] = useState<'All' | 'JRF' | 'Lectureship' | 'Below Cutoff'>('All');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -48,6 +51,7 @@ export const AdminScoresPage: React.FC = () => {
     phone: '',
     email: '',
     studentRoll: '',
+    subject: 'Economics' as ExamSubject,
     testTitle: 'UGC NET Economics — Mock Test 01',
     score: 150,
     accuracy: 80,
@@ -61,13 +65,20 @@ export const AdminScoresPage: React.FC = () => {
     const nameStr = record.studentName || '';
     const rollStr = record.studentRoll || '';
     const titleStr = record.testTitle || '';
+    const recordSubject =
+      record.subject ||
+      (titleStr.toLowerCase().includes('computer science') ? 'Computer Science' : 'Economics');
 
     const matchesSearch =
       nameStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       titleStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rollStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       phoneStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emailStr.toLowerCase().includes(searchQuery.toLowerCase());
+      emailStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recordSubject.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesSubject =
+      selectedSubjectFilter === 'All' || recordSubject === selectedSubjectFilter;
 
     const matchesTest = selectedTestFilter === 'All' || record.testTitle.includes(selectedTestFilter);
 
@@ -76,25 +87,33 @@ export const AdminScoresPage: React.FC = () => {
     else if (selectedTierFilter === 'Lectureship') matchesTier = record.score >= 136 && record.score < 160;
     else if (selectedTierFilter === 'Below Cutoff') matchesTier = record.score < 136;
 
-    return matchesSearch && matchesTest && matchesTier;
+    return matchesSearch && matchesSubject && matchesTest && matchesTier;
   });
 
-  // Calculate high-level aggregates
-  const totalSubmissions = submittedRecords.length;
+  // Calculate aggregates for current filtered view
+  const totalSubmissions = filteredRecords.length;
   const avgScore =
     totalSubmissions > 0
-      ? Math.round(submittedRecords.reduce((acc, r) => acc + r.score, 0) / totalSubmissions)
+      ? Math.round(filteredRecords.reduce((acc, r) => acc + r.score, 0) / totalSubmissions)
       : 0;
   const highestScore =
-    totalSubmissions > 0 ? Math.max(...submittedRecords.map((r) => r.score)) : 0;
+    totalSubmissions > 0 ? Math.max(...filteredRecords.map((r) => r.score)) : 0;
   const avgAccuracy =
     totalSubmissions > 0
-      ? Math.round(submittedRecords.reduce((acc, r) => acc + r.accuracy, 0) / totalSubmissions)
+      ? Math.round(filteredRecords.reduce((acc, r) => acc + r.accuracy, 0) / totalSubmissions)
       : 0;
+
+  // Counts by subject
+  const ecoCount = submittedRecords.filter(
+    (r) => (r.subject || (r.testTitle.includes('Computer') ? 'Computer Science' : 'Economics')) === 'Economics'
+  ).length;
+  const csCount = submittedRecords.filter(
+    (r) => (r.subject || (r.testTitle.includes('Computer') ? 'Computer Science' : 'Economics')) === 'Computer Science'
+  ).length;
 
   // Export to CSV
   const handleExportCSV = () => {
-    if (submittedRecords.length === 0) return;
+    if (filteredRecords.length === 0) return;
 
     const headers = [
       'Submission ID',
@@ -102,6 +121,7 @@ export const AdminScoresPage: React.FC = () => {
       'Phone Number',
       'Email Address',
       'Roll Number',
+      'Subject',
       'Test Title',
       'Score (out of 200)',
       'Accuracy (%)',
@@ -113,22 +133,26 @@ export const AdminScoresPage: React.FC = () => {
       'Date & Time'
     ];
 
-    const rows = submittedRecords.map((r) => [
-      `"${r.id}"`,
-      `"${r.studentName}"`,
-      `"${r.phoneNumber || r.phone || 'N/A'}"`,
-      `"${r.email || r.studentEmail || 'N/A'}"`,
-      `"${r.studentRoll || 'N/A'}"`,
-      `"${r.testTitle}"`,
-      r.score,
-      r.accuracy,
-      r.correctCount,
-      r.wrongCount,
-      r.unattemptedCount,
-      r.percentile,
-      `"${r.timeTaken || `${r.timeTakenMinutes} min`}"`,
-      `"${r.formattedDate || r.timestamp}"`
-    ]);
+    const rows = filteredRecords.map((r) => {
+      const sub = r.subject || (r.testTitle.includes('Computer') ? 'Computer Science' : 'Economics');
+      return [
+        `"${r.id}"`,
+        `"${r.studentName}"`,
+        `"${r.phoneNumber || r.phone || 'N/A'}"`,
+        `"${r.email || r.studentEmail || 'N/A'}"`,
+        `"${r.studentRoll || 'N/A'}"`,
+        `"${sub}"`,
+        `"${r.testTitle}"`,
+        r.score,
+        r.accuracy,
+        r.correctCount,
+        r.wrongCount,
+        r.unattemptedCount,
+        r.percentile,
+        `"${r.timeTaken || `${r.timeTakenMinutes} min`}"`,
+        `"${r.formattedDate || r.timestamp}"`
+      ];
+    });
 
     const csvContent =
       'data:text/csv;charset=utf-8,' +
@@ -137,7 +161,7 @@ export const AdminScoresPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `NETPrep_Live_Student_Scores_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `NETPrep_${selectedSubjectFilter}_Student_Scores_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -150,6 +174,8 @@ export const AdminScoresPage: React.FC = () => {
     const wrongCount = Math.max(0, Math.round(((100 - newEntry.accuracy) / 100) * (newEntry.score / 2)));
     const unattemptedCount = Math.max(0, 100 - (correctCount + wrongCount));
 
+    const isCS = newEntry.subject === 'Computer Science';
+
     const newRecord: SubmittedTestRecord = {
       id: 'sub_manual_' + Date.now(),
       studentName: newEntry.studentName.trim() || 'Aspirant',
@@ -158,8 +184,9 @@ export const AdminScoresPage: React.FC = () => {
       email: newEntry.email.trim().toLowerCase(),
       studentEmail: newEntry.email.trim().toLowerCase(),
       studentRoll: newEntry.studentRoll.trim() || `UGC-NET-${Math.floor(1000 + Math.random() * 9000)}`,
-      testId: 1,
+      testId: isCS ? 101 : 1,
       testTitle: newEntry.testTitle,
+      subject: newEntry.subject,
       score: Number(newEntry.score),
       maxScore: 200,
       totalMarks: 200,
@@ -180,8 +207,8 @@ export const AdminScoresPage: React.FC = () => {
         minute: '2-digit',
         hour12: true
       }),
-      strongAreas: ['Micro Economics — 85%', 'Macro Economics — 82%'],
-      weakAreas: ['Econometrics — 55%']
+      strongAreas: isCS ? ['DBMS — 85%', 'Data Structures & Algorithms — 82%'] : ['Micro Economics — 85%', 'Macro Economics — 82%'],
+      weakAreas: isCS ? ['Theory of Computation — 55%'] : ['Econometrics — 55%']
     };
 
     await addSubmittedRecord(newRecord);
@@ -191,6 +218,7 @@ export const AdminScoresPage: React.FC = () => {
       phone: '',
       email: '',
       studentRoll: '',
+      subject: 'Economics',
       testTitle: 'UGC NET Economics — Mock Test 01',
       score: 150,
       accuracy: 80,
@@ -225,18 +253,18 @@ export const AdminScoresPage: React.FC = () => {
             </h1>
 
             <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
-              Real-time Firestore database sync for all UGC NET Economics mock test attempts. Track candidate full names, phone numbers, email addresses, score breakdowns, and time taken live as students submit their tests.
+              Real-time Firestore database sync for all UGC NET candidate attempts across Economics and Computer Science. Track candidate full names, phone numbers, email addresses, score breakdowns, and time taken live as students submit tests.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleExportCSV}
-              disabled={submittedRecords.length === 0}
+              disabled={filteredRecords.length === 0}
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Export CSV (Excel)</span>
+              <span>Export CSV ({filteredRecords.length})</span>
             </button>
 
             <button
@@ -250,12 +278,69 @@ export const AdminScoresPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Aggregate Metrics Cards */}
+      {/* 2. Primary Subject Filter Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          id="admin-subject-all"
+          onClick={() => setSelectedSubjectFilter('All')}
+          className={`px-4 py-2.5 rounded-xl font-['Outfit'] font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+            selectedSubjectFilter === 'All'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Layers className="w-4 h-4 text-indigo-400" />
+          <span>All Subjects</span>
+          <span className={`text-[11px] px-2 py-0.2 rounded-full ${
+            selectedSubjectFilter === 'All' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {submittedRecords.length}
+          </span>
+        </button>
+
+        <button
+          id="admin-subject-economics"
+          onClick={() => setSelectedSubjectFilter('Economics')}
+          className={`px-4 py-2.5 rounded-xl font-['Outfit'] font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+            selectedSubjectFilter === 'Economics'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-indigo-300" />
+          <span>Economics (Code: 01)</span>
+          <span className={`text-[11px] px-2 py-0.2 rounded-full ${
+            selectedSubjectFilter === 'Economics' ? 'bg-indigo-700 text-white' : 'bg-indigo-50 text-indigo-700'
+          }`}>
+            {ecoCount}
+          </span>
+        </button>
+
+        <button
+          id="admin-subject-cs"
+          onClick={() => setSelectedSubjectFilter('Computer Science')}
+          className={`px-4 py-2.5 rounded-xl font-['Outfit'] font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+            selectedSubjectFilter === 'Computer Science'
+              ? 'bg-teal-700 text-white shadow-md'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Code2 className="w-4 h-4 text-teal-300" />
+          <span>Computer Science (Code: 87)</span>
+          <span className={`text-[11px] px-2 py-0.2 rounded-full ${
+            selectedSubjectFilter === 'Computer Science' ? 'bg-teal-800 text-white' : 'bg-teal-50 text-teal-700'
+          }`}>
+            {csCount}
+          </span>
+        </button>
+      </div>
+
+      {/* 3. Aggregate Metrics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-500">Total Submissions</span>
+            <span className="text-xs font-medium text-slate-500">Filtered Submissions</span>
             <Users className="w-4 h-4 text-indigo-600" />
           </div>
           <p className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-slate-900">
@@ -302,7 +387,7 @@ export const AdminScoresPage: React.FC = () => {
 
       </div>
 
-      {/* 3. Search, Filter & Action Toolbar */}
+      {/* 4. Search, Filter & Action Toolbar */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Search */}
@@ -310,7 +395,7 @@ export const AdminScoresPage: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search student name, phone, email, roll no..."
+            placeholder="Search student name, phone, email, subject, roll no..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
@@ -369,7 +454,7 @@ export const AdminScoresPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Submitted Records Table */}
+      {/* 5. Submitted Records Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -397,7 +482,7 @@ export const AdminScoresPage: React.FC = () => {
               No Test Submissions Found
             </h4>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Whenever a candidate starts and submits any mock test, their full name, phone number, email, score, accuracy, and time taken are automatically synced here in real time.
+              Whenever a candidate starts and submits any mock test for Economics or Computer Science, their full name, phone number, email, score, accuracy, and time taken are automatically synced here in real time.
             </p>
             <div className="pt-2">
               <button
@@ -414,6 +499,7 @@ export const AdminScoresPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/90 text-xs font-bold text-slate-600 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Student Name</th>
+                  <th className="py-3.5 px-4">Subject</th>
                   <th className="py-3.5 px-4">Phone Number</th>
                   <th className="py-3.5 px-4">Email Address</th>
                   <th className="py-3.5 px-4">Test Title</th>
@@ -430,6 +516,10 @@ export const AdminScoresPage: React.FC = () => {
                   const isNET = record.score >= 136 && record.score < 160;
                   const phoneDisplay = record.phoneNumber || record.phone || '—';
                   const emailDisplay = record.email || record.studentEmail || '—';
+                  const recordSubject =
+                    record.subject ||
+                    (record.testTitle.toLowerCase().includes('computer science') ? 'Computer Science' : 'Economics');
+                  const isCS = recordSubject === 'Computer Science';
 
                   return (
                     <tr key={record.id} className="hover:bg-slate-50/80 transition-colors group">
@@ -449,6 +539,17 @@ export const AdminScoresPage: React.FC = () => {
                             {record.studentRoll || 'UGC-NET-CANDIDATE'}
                           </p>
                         </div>
+                      </td>
+
+                      {/* Subject Badge */}
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                          isCS
+                            ? 'bg-teal-50 text-teal-700 border-teal-200'
+                            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        }`}>
+                          {recordSubject}
+                        </span>
                       </td>
 
                       {/* Phone Number */}
@@ -549,7 +650,7 @@ export const AdminScoresPage: React.FC = () => {
                 Log Student Score Entry
               </h3>
               <p className="text-xs text-slate-500">
-                Manually record a candidate's UGC NET Economics mock test result to Firestore.
+                Manually record a candidate's UGC NET mock test result to Firestore.
               </p>
             </div>
 
@@ -564,6 +665,52 @@ export const AdminScoresPage: React.FC = () => {
                   onChange={(e) => setNewEntry({ ...newEntry, studentName: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Exam Subject *</label>
+                  <select
+                    value={newEntry.subject}
+                    onChange={(e) => {
+                      const sub = e.target.value as ExamSubject;
+                      setNewEntry({
+                        ...newEntry,
+                        subject: sub,
+                        testTitle: sub === 'Computer Science' ? 'UGC NET Computer Science — Mock Test 01' : 'UGC NET Economics — Mock Test 01'
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
+                  >
+                    <option value="Economics">UGC NET Economics (01)</option>
+                    <option value="Computer Science">UGC NET Computer Science (87)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Test Title *</label>
+                  <select
+                    value={newEntry.testTitle}
+                    onChange={(e) => setNewEntry({ ...newEntry, testTitle: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
+                  >
+                    {newEntry.subject === 'Computer Science' ? (
+                      <>
+                        <option value="UGC NET Computer Science — Mock Test 01">CS Mock Test 01</option>
+                        <option value="UGC NET Computer Science — Mock Test 02">CS Mock Test 02</option>
+                        <option value="UGC NET Computer Science — Mock Test 03">CS Mock Test 03</option>
+                        <option value="UGC NET Computer Science — Mock Test 04">CS Mock Test 04</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="UGC NET Economics — Mock Test 01">Economics Mock Test 01</option>
+                        <option value="UGC NET Economics — Mock Test 02">Economics Mock Test 02</option>
+                        <option value="UGC NET Economics — Mock Test 03">Economics Mock Test 03</option>
+                        <option value="UGC NET Economics — Mock Test 04">Economics Mock Test 04</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -669,4 +816,3 @@ export const AdminScoresPage: React.FC = () => {
     </div>
   );
 };
-

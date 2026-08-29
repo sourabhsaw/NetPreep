@@ -62,11 +62,11 @@ export const Navbar: React.FC = () => {
                   NET<span className="text-indigo-600">Prep</span>
                 </span>
                 <span className="bg-indigo-50 text-indigo-700 text-[11px] font-semibold px-2 py-0.5 rounded-full border border-indigo-200/60 hidden sm:inline-block">
-                  Economics
+                  Exam Portal
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium tracking-wide -mt-1 hidden sm:block">
-                UGC NET Economics Test Series
+                UGC NET Mock Test Series & Analytics
               </p>
             </div>
           </div>

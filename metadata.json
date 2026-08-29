@@ -1,6 +1,6 @@
 {
-  "name": "NETPrep - UGC NET Economics Test Series",
-  "description": "Comprehensive mock test and practice portal for UGC NET Economics with realistic exam interface, detailed explanations, performance analytics, and leaderboards.",
+  "name": "NETPrep - UGC NET Mock Test Series Portal",
+  "description": "Comprehensive mock test and CBT practice portal for UGC NET Economics and Computer Science with realistic exam interface, detailed explanations, real-time score tracking, and performance diagnostics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

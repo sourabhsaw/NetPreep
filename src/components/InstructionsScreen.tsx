@@ -59,6 +59,8 @@ export const InstructionsScreen: React.FC = () => {
   }, [studentProfile]);
 
   const testTitle = selectedTest?.title || 'UGC NET Economics — Mock Test 01';
+  const testSubject = selectedTest?.subject || (testTitle.includes('Computer Science') ? 'Computer Science' : 'Economics');
+  const testSubjectCode = selectedTest?.subjectCode || (testSubject === 'Computer Science' ? '87' : '01');
   const totalQuestions = selectedTest?.totalQuestions || 100;
   const durationMinutes = selectedTest?.durationMinutes || 120;
   const totalMarks = selectedTest?.totalMarks || 200;
@@ -119,15 +121,15 @@ export const InstructionsScreen: React.FC = () => {
                 {testTitle}
               </h1>
               <p className="text-xs text-slate-300">
-                UGC NET Economics (Paper II) • 100 MCQs • 200 Marks • 120 Minutes
+                UGC NET {testSubject} (Paper II) • 100 MCQs • 200 Marks • 120 Minutes
               </p>
             </div>
 
             {/* Test Badge */}
             <div className="bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 text-right self-start sm:self-auto">
               <p className="text-[11px] text-slate-400">Total Duration</p>
-              <p className="text-sm font-bold text-emerald-400">120 Minutes (2 Hrs)</p>
-              <p className="text-[10px] font-mono text-indigo-400">Paper II Code: 01</p>
+              <p className="text-sm font-bold text-emerald-400">{durationMinutes} Minutes (2 Hrs)</p>
+              <p className="text-[10px] font-mono text-indigo-400">Paper II Code: {testSubjectCode}</p>
             </div>
           </div>
         </div>

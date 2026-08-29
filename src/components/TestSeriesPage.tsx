@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTest } from '../context/TestContext';
-import { MOCK_TESTS_CATALOG, ALL_ECONOMICS_TOPICS } from '../data/mockTestsData';
-import { MockTest } from '../types';
+import { MOCK_TESTS_CATALOG } from '../data/mockTestsData';
+import { ExamSubject, MockTest } from '../types';
 import {
   BookOpen,
   Search,
@@ -12,24 +12,35 @@ import {
   Zap,
   CheckCircle2,
   SlidersHorizontal,
-  GraduationCap
+  GraduationCap,
+  TrendingUp,
+  Code2,
+  Layers
 } from 'lucide-react';
 
 export const TestSeriesPage: React.FC = () => {
-  const { initiateTestStart } = useTest();
+  const { initiateTestStart, selectedSubjectFilter, setSelectedSubjectFilter } = useTest();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | 'Easy' | 'Moderate' | 'Hard'>('All');
   const [selectedCategory, setSelectedCategory] = useState<'All' | 'Full Mock' | 'Topic Special'>('All');
 
   const filteredTests = MOCK_TESTS_CATALOG.filter((test) => {
+    const matchesSubject = selectedSubjectFilter === 'All' || test.subject === selectedSubjectFilter;
     const matchesSearch =
       test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.description.toLowerCase().includes(searchQuery.toLowerCase());
+      test.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      test.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDifficulty = selectedDifficulty === 'All' || test.difficulty === selectedDifficulty;
     const matchesCategory = selectedCategory === 'All' || test.category === selectedCategory;
 
-    return matchesSearch && matchesDifficulty && matchesCategory;
+    return matchesSubject && matchesSearch && matchesDifficulty && matchesCategory;
   });
+
+  const subjectCounts = {
+    all: MOCK_TESTS_CATALOG.length,
+    economics: MOCK_TESTS_CATALOG.filter((t) => t.subject === 'Economics').length,
+    cs: MOCK_TESTS_CATALOG.filter((t) => t.subject === 'Computer Science').length
+  };
 
   return (
     <div id="test-series-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -42,15 +53,17 @@ export const TestSeriesPage: React.FC = () => {
 
         <div className="max-w-2xl space-y-4 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-400/20">
-            <span>📝 UGC NET Economics (Paper II)</span>
+            <span>📝 NTA UGC NET Mock Test Series Portal</span>
           </div>
 
           <h1 className="font-['Outfit'] font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
-            UGC NET Economics Mock Test Series
+            {selectedSubjectFilter === 'All'
+              ? 'UGC NET Mock Test Series'
+              : `UGC NET ${selectedSubjectFilter} Test Series`}
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Practice with full-length 100-question mock tests created by subject experts. Accurate CBT simulator, complete timer tracking, and in-depth performance analytics.
+            Practice with full-length 100-question mock tests created strictly according to NTA guidelines. Accurate CBT simulator, complete timer tracking, and in-depth performance diagnostics.
           </p>
 
           <div className="flex flex-wrap gap-4 pt-2 text-xs font-semibold text-slate-300">
@@ -70,7 +83,64 @@ export const TestSeriesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters & Search Toolbar */}
+      {/* Primary Subject Switcher Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          id="filter-subject-all"
+          onClick={() => setSelectedSubjectFilter('All')}
+          className={`px-5 py-3 rounded-2xl font-['Outfit'] font-bold text-sm transition-all flex items-center gap-2.5 ${
+            selectedSubjectFilter === 'All'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Layers className="w-4 h-4 text-indigo-400" />
+          <span>All UGC NET Subjects</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            selectedSubjectFilter === 'All' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {subjectCounts.all}
+          </span>
+        </button>
+
+        <button
+          id="filter-subject-economics"
+          onClick={() => setSelectedSubjectFilter('Economics')}
+          className={`px-5 py-3 rounded-2xl font-['Outfit'] font-bold text-sm transition-all flex items-center gap-2.5 ${
+            selectedSubjectFilter === 'Economics'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4 text-indigo-300" />
+          <span>Economics (Code: 01)</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            selectedSubjectFilter === 'Economics' ? 'bg-indigo-700 text-white' : 'bg-indigo-50 text-indigo-700'
+          }`}>
+            {subjectCounts.economics} Mocks
+          </span>
+        </button>
+
+        <button
+          id="filter-subject-cs"
+          onClick={() => setSelectedSubjectFilter('Computer Science')}
+          className={`px-5 py-3 rounded-2xl font-['Outfit'] font-bold text-sm transition-all flex items-center gap-2.5 ${
+            selectedSubjectFilter === 'Computer Science'
+              ? 'bg-teal-700 text-white shadow-md shadow-teal-700/25'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Code2 className="w-4 h-4 text-teal-300" />
+          <span>Computer Science (Code: 87)</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            selectedSubjectFilter === 'Computer Science' ? 'bg-teal-800 text-white' : 'bg-teal-50 text-teal-700'
+          }`}>
+            {subjectCounts.cs} Mocks
+          </span>
+        </button>
+      </div>
+
+      {/* Secondary Filters & Search Toolbar */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Search Input */}
@@ -78,7 +148,7 @@ export const TestSeriesPage: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search mock tests (e.g. Mock Test 01, Micro, Econometrics)..."
+            placeholder="Search mock tests (e.g. Mock Test 01, OS, DBMS, Micro)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
@@ -128,6 +198,7 @@ export const TestSeriesPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTests.map((test) => {
           const isFree = test.isFree;
+          const isCS = test.subject === 'Computer Science';
           const diffBadge =
             test.difficulty === 'Easy'
               ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
@@ -144,18 +215,26 @@ export const TestSeriesPage: React.FC = () => {
               <div className="space-y-4">
                 {/* Header Badge */}
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${diffBadge}`}>
-                    Difficulty: {test.difficulty}
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                    isCS ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  }`}>
+                    {test.subject}
                   </span>
-                  {isFree ? (
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-xs">
-                      Free Test
+                  
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${diffBadge}`}>
+                      {test.difficulty}
                     </span>
-                  ) : (
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                      Standard Mock
-                    </span>
-                  )}
+                    {isFree ? (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-xs">
+                        Free Test
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                        Standard Mock
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Title & Description */}
@@ -187,7 +266,7 @@ export const TestSeriesPage: React.FC = () => {
                 {/* Topics Preview */}
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                    Topics Covered
+                    Units Covered
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {test.topicsCovered.slice(0, 3).map((top) => (
@@ -222,6 +301,23 @@ export const TestSeriesPage: React.FC = () => {
           );
         })}
       </div>
+
+      {filteredTests.length === 0 && (
+        <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-4">
+          <p className="text-slate-500 text-sm">No mock tests found matching the current search and filters.</p>
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedDifficulty('All');
+              setSelectedCategory('All');
+              setSelectedSubjectFilter('All');
+            }}
+            className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors"
+          >
+            Reset Filters
+          </button>
+        </div>
+      )}
 
     </div>
   );

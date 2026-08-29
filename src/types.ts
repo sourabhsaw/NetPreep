@@ -1,5 +1,7 @@
 export type Difficulty = 'Easy' | 'Moderate' | 'Hard';
 
+export type ExamSubject = 'Economics' | 'Computer Science';
+
 export type EconomicsTopic =
   | 'Micro Economics'
   | 'Macro Economics'
@@ -12,16 +14,31 @@ export type EconomicsTopic =
   | 'Indian Economy'
   | 'Environmental Economics';
 
+export type ComputerScienceTopic =
+  | 'Discrete Mathematics & Optimization'
+  | 'Computer System Architecture'
+  | 'Programming Languages & CG'
+  | 'Database Management Systems'
+  | 'Operating Systems & System Software'
+  | 'Software Engineering'
+  | 'Data Structures & Algorithms'
+  | 'Theory of Computation & Compilers'
+  | 'Computer Networks & Security'
+  | 'Artificial Intelligence';
+
+export type SubjectTopic = EconomicsTopic | ComputerScienceTopic | string;
+
 export interface Question {
   id: number;
   test_id: number;
   question: string;
   options: string[];
   correct_answer: number; // 0-indexed (0=A, 1=B, 2=C, 3=D)
-  topic: EconomicsTopic;
+  topic: SubjectTopic;
   difficulty: Difficulty;
   explanation: string;
   concept: string;
+  subject?: ExamSubject;
   paper_section?: string;
 }
 
@@ -30,6 +47,8 @@ export type QuestionState = 'not_visited' | 'not_answered' | 'answered' | 'marke
 export interface MockTest {
   id: number;
   title: string;
+  subject: ExamSubject;
+  subjectCode: string;
   description: string;
   totalQuestions: number;
   durationMinutes: number;
@@ -37,7 +56,7 @@ export interface MockTest {
   difficulty: Difficulty;
   isFree: boolean;
   category: 'Full Mock' | 'Topic Special' | 'Previous Year';
-  topicsCovered: EconomicsTopic[];
+  topicsCovered: string[];
   attemptsCount: number;
 }
 
@@ -52,6 +71,7 @@ export interface UserAnswer {
 export interface TestResult {
   testId: number;
   testTitle: string;
+  subject?: ExamSubject;
   completedAt: string;
   score: number;
   totalMarks: number;
@@ -94,6 +114,7 @@ export interface StudentProfile {
   email: string;
   rollNumber: string;
   targetExam?: string;
+  preferredSubject?: ExamSubject;
   isRegistered?: boolean;
   testsAttempted?: number;
   averageScore?: number;
@@ -112,6 +133,7 @@ export interface SubmittedTestRecord {
   studentRoll?: string;
   testId: number;
   testTitle: string;
+  subject?: ExamSubject;
   score: number;
   maxScore?: number;
   totalMarks: number;
