@@ -14,7 +14,7 @@ export const WhatsAppSupportWidget: React.FC = () => {
     return null;
   }
 
-  const WHATSAPP_PHONE = '91824992831';
+  const WHATSAPP_PHONE = '918249928311';
   const DEFAULT_MESSAGE = 'Hello NETPrep, I have a query regarding the UGC NET Economics Test Series.';
 
   const handleOpenWhatsApp = (customText?: string) => {

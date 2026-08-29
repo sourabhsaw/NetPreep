@@ -154,13 +154,17 @@ export const CBTTestInterface: React.FC = () => {
             </div>
 
             {/* Candidate Photo / Info mini card */}
-            <div className="hidden lg:flex items-center gap-2.5 pl-3 border-l border-slate-700">
-              <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
-                {studentProfile.name.charAt(0)}
+            <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-700">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-xs font-bold ring-2 ring-indigo-400/40 shrink-0">
+                {studentProfile.name ? studentProfile.name.charAt(0).toUpperCase() : 'C'}
               </div>
-              <div className="text-left leading-tight">
-                <p className="text-xs font-semibold text-white truncate max-w-[90px]">{studentProfile.name}</p>
-                <p className="text-[10px] text-slate-400 font-mono">Roll: 8941</p>
+              <div className="text-left leading-tight hidden sm:block">
+                <p className="text-xs font-bold text-white truncate max-w-[120px] lg:max-w-[150px]">
+                  {studentProfile.name || 'Candidate'}
+                </p>
+                <p className="text-[10px] text-indigo-300 font-mono">
+                  {studentProfile.rollNumber || 'UGC-NET-2026'}
+                </p>
               </div>
             </div>
 

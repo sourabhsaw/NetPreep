@@ -129,19 +129,19 @@ export const Footer: React.FC = () => {
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                 <span className="text-slate-300 text-xs leading-relaxed">
-                  Jamunanki, Kaurmunda, Rourkela, Odisha, India
+                  Rourkela, Odisha, India
                 </span>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                 <a
-                  href="https://wa.me/91824992831?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
+                  href="https://wa.me/918249928311?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-slate-300 hover:text-emerald-400 font-mono transition-colors"
                 >
-                  WhatsApp: +91 824992831
+                  WhatsApp: +91 8249928311
                 </a>
               </div>
 

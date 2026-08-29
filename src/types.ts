@@ -4,18 +4,13 @@ export type EconomicsTopic =
   | 'Micro Economics'
   | 'Macro Economics'
   | 'Mathematical Economics'
-  | 'Statistics'
   | 'Econometrics'
   | 'International Economics'
   | 'Public Economics'
   | 'Money & Banking'
   | 'Development Economics'
   | 'Indian Economy'
-  | 'Environmental Economics'
-  | 'Agricultural Economics'
-  | 'Industrial Economics'
-  | 'Labour Economics'
-  | 'Growth Economics';
+  | 'Environmental Economics';
 
 export interface Question {
   id: number;

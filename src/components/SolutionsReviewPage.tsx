@@ -193,7 +193,7 @@ export const SolutionsReviewPage: React.FC = () => {
             onChange={(e) => setSelectedTopicFilter(e.target.value)}
             className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="All">All Topics (15)</option>
+            <option value="All">All Topics ({ALL_ECONOMICS_TOPICS.length})</option>
             {ALL_ECONOMICS_TOPICS.map((topic) => (
               <option key={topic} value={topic}>
                 {topic}

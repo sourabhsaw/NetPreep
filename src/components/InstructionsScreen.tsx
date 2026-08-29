@@ -10,20 +10,55 @@ import {
   ArrowLeft,
   Play,
   ShieldCheck,
-  Check
+  Check,
+  User,
+  Hash,
+  Sparkles,
+  Info,
+  AlertCircle
 } from 'lucide-react';
 
 export const InstructionsScreen: React.FC = () => {
-  const { selectedTest, confirmAndLaunchTest, setCurrentView, studentProfile } = useTest();
+  const {
+    selectedTest,
+    confirmAndLaunchTest,
+    setCurrentView,
+    studentProfile,
+    updateStudentProfile
+  } = useTest();
+
+  const [candidateName, setCandidateName] = useState<string>(
+    studentProfile.name && studentProfile.name !== 'Rahul' ? studentProfile.name : ''
+  );
+  const [candidateRoll, setCandidateRoll] = useState<string>(
+    studentProfile.rollNumber || `UGC-NET-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+  );
   const [agreementChecked, setAgreementChecked] = useState(true);
+  const [nameTouched, setNameTouched] = useState(false);
 
   const testTitle = selectedTest?.title || 'UGC NET Economics — Mock Test 01';
   const totalQuestions = selectedTest?.totalQuestions || 100;
   const durationMinutes = selectedTest?.durationMinutes || 120;
   const totalMarks = selectedTest?.totalMarks || 200;
 
+  const isNameValid = candidateName.trim().length >= 2;
+  const canStartTest = isNameValid && agreementChecked;
+
+  const handleStartTest = () => {
+    if (!isNameValid) {
+      setNameTouched(true);
+      return;
+    }
+    // Update candidate profile state and local storage before launch
+    updateStudentProfile({
+      name: candidateName.trim(),
+      rollNumber: candidateRoll.trim()
+    });
+    confirmAndLaunchTest();
+  };
+
   return (
-    <div id="test-instructions-screen" className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+    <div id="test-instructions-screen" className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       
       {/* Top Breadcrumb / Back button */}
       <button
@@ -42,23 +77,114 @@ export const InstructionsScreen: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-semibold">
-                <span>📋 Test Instructions</span>
+                <span>📋 Official NTA UGC NET Pattern</span>
               </div>
               <h1 className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-white tracking-tight">
                 {testTitle}
               </h1>
               <p className="text-xs text-slate-300">
-                National Testing Agency (NTA) UGC NET Pattern • Paper II (Economics)
+                UGC NET Economics (Paper II) • 100 MCQs • 200 Marks • 120 Minutes
               </p>
             </div>
 
-            {/* Candidate Badge */}
+            {/* Test Badge */}
             <div className="bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 text-right self-start sm:self-auto">
-              <p className="text-[11px] text-slate-400">Candidate Name</p>
-              <p className="text-sm font-bold text-white">{studentProfile.name}</p>
-              <p className="text-[10px] font-mono text-indigo-400">{studentProfile.rollNumber}</p>
+              <p className="text-[11px] text-slate-400">Total Duration</p>
+              <p className="text-sm font-bold text-emerald-400">120 Minutes (2 Hrs)</p>
+              <p className="text-[10px] font-mono text-indigo-400">Paper II Code: 01</p>
             </div>
           </div>
+        </div>
+
+        {/* 1. MANDATORY CANDIDATE REGISTRATION SECTION */}
+        <div className="bg-indigo-50/70 border-b border-indigo-100 p-6 sm:p-7 space-y-4">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-['Outfit'] font-bold text-base text-slate-900 flex items-center gap-2">
+                  <span>Candidate Registration & Verification</span>
+                  <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                    * Mandatory
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-600">
+                  Please enter your name below. This name will appear on your scorecard, result analysis, and rank list.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* Candidate Full Name Input (Required) */}
+            <div className="space-y-1.5">
+              <label htmlFor="candidate-name-input" className="block text-xs font-bold text-slate-800">
+                Candidate Full Name <span className="text-rose-600">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="candidate-name-input"
+                  type="text"
+                  value={candidateName}
+                  onChange={(e) => {
+                    setCandidateName(e.target.value);
+                    if (!nameTouched) setNameTouched(true);
+                  }}
+                  placeholder="e.g. Sourabh Saw / Ananya Verma"
+                  className={`w-full pl-9 pr-10 py-2.5 bg-white rounded-xl border text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all ${
+                    nameTouched && !isNameValid
+                      ? 'border-rose-400 focus:ring-2 focus:ring-rose-200'
+                      : isNameValid
+                      ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-200'
+                      : 'border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500'
+                  }`}
+                />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                {isNameValid && (
+                  <CheckCircle className="w-4 h-4 text-emerald-600 absolute right-3 top-3 pointer-events-none" />
+                )}
+              </div>
+              {nameTouched && !isNameValid && (
+                <p className="text-xs text-rose-600 flex items-center gap-1 font-medium pt-0.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please enter your full name (minimum 2 characters) before starting.</span>
+                </p>
+              )}
+            </div>
+
+            {/* Candidate Roll Number Input */}
+            <div className="space-y-1.5">
+              <label htmlFor="candidate-roll-input" className="block text-xs font-bold text-slate-800">
+                Roll Number / Reg. ID
+              </label>
+              <div className="relative">
+                <input
+                  id="candidate-roll-input"
+                  type="text"
+                  value={candidateRoll}
+                  onChange={(e) => setCandidateRoll(e.target.value)}
+                  placeholder="UGC-NET-2026-XXXX"
+                  className="w-full pl-9 pr-4 py-2.5 bg-white rounded-xl border border-slate-300 text-sm font-mono font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+                />
+                <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Auto-assigned registration number for exam simulation.
+              </p>
+            </div>
+          </div>
+
+          {/* Active Candidate Confirmation Pill */}
+          {isNameValid && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium animate-fadeIn">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                Verified candidate: <strong className="font-bold text-emerald-950">{candidateName.trim()}</strong> (Roll No: <span className="font-mono">{candidateRoll}</span>). Ready for examination.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Test Summary Pill Grid */}
@@ -114,7 +240,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                Each question has four options (A, B, C, D).
+                Each question has four options (A, B, C, D) with exactly one correct answer (+2 Marks).
               </p>
             </div>
 
@@ -123,7 +249,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                Select one answer by clicking on the desired option circle.
+                Select one answer by clicking on the desired option circle. You can change your choice anytime.
               </p>
             </div>
 
@@ -132,7 +258,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                Unattempted questions receive no marks (0 marks).
+                Unattempted questions receive no marks (0 marks). There is NO negative marking in UGC NET Economics Paper II.
               </p>
             </div>
 
@@ -141,7 +267,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                Submit the test before the timer ends. The test will auto-submit upon timer expiry.
+                Submit the test before the 120-minute timer expires. The test will automatically submit upon countdown completion.
               </p>
             </div>
 
@@ -150,7 +276,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                You can navigate between questions using the Question Palette or the Next/Previous buttons.
+                Navigate between questions using the Question Palette on the right or Next / Previous buttons.
               </p>
             </div>
 
@@ -159,7 +285,7 @@ export const InstructionsScreen: React.FC = () => {
                 <Check className="w-3.5 h-3.5" />
               </div>
               <p className="text-sm font-medium text-slate-800">
-                You can mark questions for review if you want to reconsider them later before submitting.
+                You can mark questions for review if you want to revisit them later before final submission.
               </p>
             </div>
           </div>
@@ -199,10 +325,22 @@ export const InstructionsScreen: React.FC = () => {
                 className="mt-0.5 w-4 h-4 text-indigo-600 rounded-md border-slate-300 focus:ring-indigo-500 cursor-pointer"
               />
               <span className="text-xs sm:text-sm text-slate-700 leading-snug">
-                I have read and understood all the instructions above. I declare that I am ready to begin the UGC NET Economics examination simulation.
+                I have read and understood all the instructions above. I declare that all information provided is accurate and I am ready to begin the examination.
               </span>
             </label>
           </div>
+
+          {/* Validation Notice if button is disabled */}
+          {!canStartTest && (
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                {!isNameValid
+                  ? '⚠️ Please enter your Full Name in the Candidate Registration section above to unlock the Start Test button.'
+                  : '⚠️ Please accept the declaration checkbox above to proceed.'}
+              </span>
+            </div>
+          )}
 
           {/* Start Test Button */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-200">
@@ -215,16 +353,16 @@ export const InstructionsScreen: React.FC = () => {
 
             <button
               id="confirm-start-test-btn"
-              disabled={!agreementChecked}
-              onClick={confirmAndLaunchTest}
+              disabled={!canStartTest}
+              onClick={handleStartTest}
               className={`w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2.5 shadow-lg transition-all ${
-                agreementChecked
-                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30 hover:-translate-y-0.5 active:translate-y-0'
-                  : 'bg-slate-300 cursor-not-allowed shadow-none'
+                canStartTest
+                  ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+                  : 'bg-slate-300 cursor-not-allowed shadow-none opacity-80'
               }`}
             >
               <Play className="w-4 h-4 fill-white" />
-              <span>Start Test</span>
+              <span>{isNameValid ? `Start Test as ${candidateName.trim()}` : 'Enter Name to Start Test'}</span>
             </button>
           </div>
 
@@ -235,3 +373,4 @@ export const InstructionsScreen: React.FC = () => {
     </div>
   );
 };
+

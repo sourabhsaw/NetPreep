@@ -4,18 +4,13 @@ export const ALL_ECONOMICS_TOPICS: EconomicsTopic[] = [
   'Micro Economics',
   'Macro Economics',
   'Mathematical Economics',
-  'Statistics',
   'Econometrics',
   'International Economics',
   'Public Economics',
   'Money & Banking',
   'Development Economics',
   'Indian Economy',
-  'Environmental Economics',
-  'Agricultural Economics',
-  'Industrial Economics',
-  'Labour Economics',
-  'Growth Economics'
+  'Environmental Economics'
 ];
 
 export const MOCK_TESTS_CATALOG: MockTest[] = [
@@ -35,7 +30,7 @@ export const MOCK_TESTS_CATALOG: MockTest[] = [
   {
     id: 2,
     title: 'UGC NET Economics — Mock Test 02',
-    description: 'High-difficulty mock test with advanced problems in Econometrics, Mathematical Economics, and Microeconomic Theory.',
+    description: 'High-difficulty mock test with 100 distinct questions covering Econometrics, Mathematical Economics, Micro & Macro Theory, and Indian Economy.',
     totalQuestions: 100,
     durationMinutes: 120,
     totalMarks: 200,
@@ -61,14 +56,14 @@ export const MOCK_TESTS_CATALOG: MockTest[] = [
   {
     id: 4,
     title: 'UGC NET Economics — Mock Test 04',
-    description: 'Special emphasis on Microeconomics, Macroeconomics, Money & Banking, and Public Finance models.',
+    description: 'Full-length 100-question mock test covering all 10 core units with special focus on Advanced Micro/Macro, Econometrics, and Indian Economic Policies.',
     totalQuestions: 100,
     durationMinutes: 120,
     totalMarks: 200,
     difficulty: 'Moderate',
     isFree: false,
     category: 'Full Mock',
-    topicsCovered: ['Micro Economics', 'Macro Economics', 'Money & Banking', 'Public Economics'],
+    topicsCovered: ALL_ECONOMICS_TOPICS,
     attemptsCount: 1890
   },
   {
@@ -81,7 +76,7 @@ export const MOCK_TESTS_CATALOG: MockTest[] = [
     difficulty: 'Hard',
     isFree: false,
     category: 'Full Mock',
-    topicsCovered: ['Mathematical Economics', 'Statistics', 'Econometrics'],
+    topicsCovered: ['Mathematical Economics', 'Econometrics'],
     attemptsCount: 1540
   },
   {
@@ -94,7 +89,7 @@ export const MOCK_TESTS_CATALOG: MockTest[] = [
     difficulty: 'Moderate',
     isFree: false,
     category: 'Full Mock',
-    topicsCovered: ['Indian Economy', 'Development Economics', 'Environmental Economics', 'Agricultural Economics'],
+    topicsCovered: ['Indian Economy', 'Development Economics', 'Environmental Economics', 'Public Economics'],
     attemptsCount: 2130
   }
 ];

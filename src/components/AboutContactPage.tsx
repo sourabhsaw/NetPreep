@@ -120,12 +120,12 @@ export const AboutContactPage: React.FC = () => {
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs">
               <span className="text-xs font-sans text-slate-500">Official WhatsApp</span>
               <a
-                href="https://wa.me/91824992831?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
+                href="https://wa.me/918249928311?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-emerald-600 hover:text-emerald-800 text-sm hover:underline"
               >
-                +91 824992831
+                +91 8249928311
               </a>
             </div>
 

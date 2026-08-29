@@ -8,7 +8,7 @@ import {
   QuestionState,
   SubmittedTestRecord
 } from '../types';
-import { mockTest01Questions } from '../data/questionsData';
+import { getQuestionsForTest, mockTest01Questions } from '../data/questionsData';
 import { MOCK_TESTS_CATALOG, INITIAL_STUDENT_PROFILE } from '../data/mockTestsData';
 import confetti from 'canvas-confetti';
 
@@ -111,7 +111,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
     formattedDate: 'Today, 10:15 AM',
     strongAreas: ['Macro Economics — 96%', 'Mathematical Economics — 92%'],
-    weakAreas: ['Labour Economics — 66%']
+    weakAreas: ['Econometrics — 66%']
   },
   {
     id: 'rec_init_3',
@@ -132,7 +132,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
     formattedDate: 'Yesterday, 04:30 PM',
     strongAreas: ['International Economics — 90%', 'Money & Banking — 88%'],
-    weakAreas: ['Growth Economics — 60%']
+    weakAreas: ['Micro Economics — 65%']
   },
   {
     id: 'rec_init_4',
@@ -329,7 +329,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Launch the CBT test
   const confirmAndLaunchTest = () => {
-    const totalQ = mockTest01Questions;
+    const totalQ = getQuestionsForTest(selectedTest?.id || 1);
     setQuestions(totalQ);
 
     const initialAnswers: Record<number, UserAnswer> = {};

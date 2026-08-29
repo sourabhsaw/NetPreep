@@ -22,14 +22,14 @@ export const AnalyticsPage: React.FC = () => {
   const topicData = testResult?.topicBreakdown || {
     'Micro Economics': { total: 15, correct: 13, wrong: 2, unattempted: 0, accuracy: 87 },
     'Macro Economics': { total: 15, correct: 11, wrong: 3, unattempted: 1, accuracy: 73 },
-    'Statistics': { total: 10, correct: 6, wrong: 4, unattempted: 0, accuracy: 60 },
+    'Mathematical Economics': { total: 10, correct: 7, wrong: 3, unattempted: 0, accuracy: 70 },
     'Econometrics': { total: 10, correct: 5, wrong: 4, unattempted: 1, accuracy: 50 },
     'International Economics': { total: 10, correct: 8, wrong: 2, unattempted: 0, accuracy: 80 },
+    'Public Economics': { total: 10, correct: 8, wrong: 2, unattempted: 0, accuracy: 80 },
+    'Money & Banking': { total: 10, correct: 8, wrong: 1, unattempted: 1, accuracy: 80 },
+    'Development Economics': { total: 10, correct: 8, wrong: 1, unattempted: 1, accuracy: 80 },
     'Indian Economy': { total: 10, correct: 9, wrong: 1, unattempted: 0, accuracy: 90 },
-    'Public Economics': { total: 8, correct: 6, wrong: 2, unattempted: 0, accuracy: 75 },
-    'Money & Banking': { total: 8, correct: 6, wrong: 1, unattempted: 1, accuracy: 86 },
-    'Development Economics': { total: 6, correct: 5, wrong: 0, unattempted: 1, accuracy: 100 },
-    'Growth Economics': { total: 8, correct: 2, wrong: 0, unattempted: 6, accuracy: 100 }
+    'Environmental Economics': { total: 10, correct: 7, wrong: 2, unattempted: 1, accuracy: 70 }
   };
 
   const strongAreas = testResult?.strongAreas || [
@@ -40,11 +40,11 @@ export const AnalyticsPage: React.FC = () => {
 
   const weakAreas = testResult?.weakAreas || [
     'Econometrics — 50%',
-    'Statistics — 60%'
+    'Mathematical Economics — 70%'
   ];
 
   const recommendation = testResult?.recommendation ||
-    'Practice more questions from Econometrics and Statistics. Focus on regression diagnostics, hypothesis testing, and OLS assumptions.';
+    'Practice more questions from Econometrics and Mathematical Economics. Focus on regression diagnostics, matrix input-output models, and OLS assumptions.';
 
   return (
     <div id="analytics-dashboard-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -96,7 +96,7 @@ export const AnalyticsPage: React.FC = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
           <p className="text-xs text-slate-500 font-medium">Topics Mastered</p>
           <p className="font-['Outfit'] font-extrabold text-3xl text-emerald-600">
-            {strongAreas.length} <span className="text-sm font-normal text-slate-500">/ 15</span>
+            {strongAreas.length} <span className="text-sm font-normal text-slate-500">/ 10</span>
           </p>
           <p className="text-[11px] text-emerald-600 font-semibold">&gt; 75% accuracy mark</p>
         </div>

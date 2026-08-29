@@ -57,11 +57,11 @@ export const TestResultPage: React.FC = () => {
             </div>
 
             <h1 className="font-['Outfit'] font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
-              🎉 Test Completed
+              🎉 Scorecard: {studentProfile.name || 'Candidate'}
             </h1>
 
             <p className="text-slate-300 text-sm max-w-md">
-              {testResult.testTitle} • Completed on {testResult.completedAt}
+              {testResult.testTitle} • Roll: <span className="font-mono text-indigo-300">{studentProfile.rollNumber || 'UGC-NET-2026'}</span> • Completed on {testResult.completedAt}
             </p>
 
             <div className="flex items-center justify-center md:justify-start gap-2 pt-2">
