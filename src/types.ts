@@ -90,24 +90,30 @@ export interface LeaderboardUser {
 
 export interface StudentProfile {
   name: string;
+  phone?: string;
   email: string;
   rollNumber: string;
-  targetExam: string;
-  testsAttempted: number;
-  averageScore: number;
-  bestScore: number;
-  averageAccuracy: number;
-  currentRank: number;
+  targetExam?: string;
+  isRegistered?: boolean;
+  testsAttempted?: number;
+  averageScore?: number;
+  bestScore?: number;
+  averageAccuracy?: number;
+  currentRank?: number;
 }
 
 export interface SubmittedTestRecord {
   id: string;
   studentName: string;
+  phoneNumber?: string;
+  phone?: string;
+  email?: string;
   studentEmail?: string;
   studentRoll?: string;
   testId: number;
   testTitle: string;
   score: number;
+  maxScore?: number;
   totalMarks: number;
   totalQuestions: number;
   correctCount: number;
@@ -115,6 +121,7 @@ export interface SubmittedTestRecord {
   unattemptedCount: number;
   accuracy: number; // in %
   percentile: number;
+  timeTaken?: string;
   timeTakenMinutes: number;
   timestamp: string;
   formattedDate: string;

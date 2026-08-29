@@ -18,7 +18,12 @@ import {
   RefreshCw,
   ArrowRight,
   Sparkles,
-  GraduationCap
+  GraduationCap,
+  Phone,
+  Mail,
+  Radio,
+  CheckCircle,
+  Database
 } from 'lucide-react';
 
 export const AdminScoresPage: React.FC = () => {
@@ -29,7 +34,7 @@ export const AdminScoresPage: React.FC = () => {
     addSubmittedRecord,
     viewRecordResult,
     setCurrentView,
-    studentProfile
+    isFirestoreConnected
   } = useTest();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +45,8 @@ export const AdminScoresPage: React.FC = () => {
   // New manual candidate submission state
   const [newEntry, setNewEntry] = useState({
     studentName: '',
-    studentEmail: '',
+    phone: '',
+    email: '',
     studentRoll: '',
     testTitle: 'UGC NET Economics — Mock Test 01',
     score: 150,
@@ -50,11 +56,18 @@ export const AdminScoresPage: React.FC = () => {
 
   // Filtered records
   const filteredRecords = submittedRecords.filter((record) => {
+    const phoneStr = record.phoneNumber || record.phone || '';
+    const emailStr = record.email || record.studentEmail || '';
+    const nameStr = record.studentName || '';
+    const rollStr = record.studentRoll || '';
+    const titleStr = record.testTitle || '';
+
     const matchesSearch =
-      record.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.testTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (record.studentRoll && record.studentRoll.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (record.studentEmail && record.studentEmail.toLowerCase().includes(searchQuery.toLowerCase()));
+      nameStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      titleStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rollStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      phoneStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emailStr.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesTest = selectedTestFilter === 'All' || record.testTitle.includes(selectedTestFilter);
 
@@ -86,8 +99,9 @@ export const AdminScoresPage: React.FC = () => {
     const headers = [
       'Submission ID',
       'Student Name',
+      'Phone Number',
+      'Email Address',
       'Roll Number',
-      'Email',
       'Test Title',
       'Score (out of 200)',
       'Accuracy (%)',
@@ -95,15 +109,16 @@ export const AdminScoresPage: React.FC = () => {
       'Wrong Count',
       'Unattempted Count',
       'Percentile',
-      'Time Taken (Min)',
+      'Time Taken',
       'Date & Time'
     ];
 
     const rows = submittedRecords.map((r) => [
       `"${r.id}"`,
       `"${r.studentName}"`,
+      `"${r.phoneNumber || r.phone || 'N/A'}"`,
+      `"${r.email || r.studentEmail || 'N/A'}"`,
       `"${r.studentRoll || 'N/A'}"`,
-      `"${r.studentEmail || 'N/A'}"`,
       `"${r.testTitle}"`,
       r.score,
       r.accuracy,
@@ -111,7 +126,7 @@ export const AdminScoresPage: React.FC = () => {
       r.wrongCount,
       r.unattemptedCount,
       r.percentile,
-      r.timeTakenMinutes,
+      `"${r.timeTaken || `${r.timeTakenMinutes} min`}"`,
       `"${r.formattedDate || r.timestamp}"`
     ]);
 
@@ -122,14 +137,14 @@ export const AdminScoresPage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `NETPrep_Student_Scores_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `NETPrep_Live_Student_Scores_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   // Add manual entry
-  const handleAddManualSubmission = (e: React.FormEvent) => {
+  const handleAddManualSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
     const correctCount = Math.round(newEntry.score / 2);
     const wrongCount = Math.max(0, Math.round(((100 - newEntry.accuracy) / 100) * (newEntry.score / 2)));
@@ -137,12 +152,16 @@ export const AdminScoresPage: React.FC = () => {
 
     const newRecord: SubmittedTestRecord = {
       id: 'sub_manual_' + Date.now(),
-      studentName: newEntry.studentName || 'Aspirant',
-      studentEmail: newEntry.studentEmail || 'aspirant@netprep.in',
-      studentRoll: newEntry.studentRoll || `UGC-NET-${Math.floor(1000 + Math.random() * 9000)}`,
+      studentName: newEntry.studentName.trim() || 'Aspirant',
+      phoneNumber: newEntry.phone.trim(),
+      phone: newEntry.phone.trim(),
+      email: newEntry.email.trim().toLowerCase(),
+      studentEmail: newEntry.email.trim().toLowerCase(),
+      studentRoll: newEntry.studentRoll.trim() || `UGC-NET-${Math.floor(1000 + Math.random() * 9000)}`,
       testId: 1,
       testTitle: newEntry.testTitle,
       score: Number(newEntry.score),
+      maxScore: 200,
       totalMarks: 200,
       totalQuestions: 100,
       correctCount,
@@ -150,18 +169,27 @@ export const AdminScoresPage: React.FC = () => {
       unattemptedCount,
       accuracy: Number(newEntry.accuracy),
       percentile: Number(Math.min(99.9, Math.max(50, (newEntry.score / 200) * 95 + 4)).toFixed(2)),
+      timeTaken: `${newEntry.timeTakenMinutes} min`,
       timeTakenMinutes: Number(newEntry.timeTakenMinutes),
       timestamp: new Date().toISOString(),
-      formattedDate: 'Just Now (Manual Entry)',
+      formattedDate: new Date().toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
       strongAreas: ['Micro Economics — 85%', 'Macro Economics — 82%'],
       weakAreas: ['Econometrics — 55%']
     };
 
-    addSubmittedRecord(newRecord);
+    await addSubmittedRecord(newRecord);
     setShowAddModal(false);
     setNewEntry({
       studentName: '',
-      studentEmail: '',
+      phone: '',
+      email: '',
       studentRoll: '',
       testTitle: 'UGC NET Economics — Mock Test 01',
       score: 150,
@@ -177,17 +205,27 @@ export const AdminScoresPage: React.FC = () => {
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-lg border border-slate-800">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-400/20">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Owner & Admin Portal • Student Test Records</span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-400/20">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Admin Portal • Live Score Sync</span>
+              </div>
+              
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-400/30">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Firestore Real-Time Sync Active</span>
+              </div>
             </div>
 
             <h1 className="font-['Outfit'] font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
-              Candidate Test Scorecards & Logs
+              Live Candidate Scorecards & Submissions
             </h1>
 
             <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
-              Real-time persistent repository of all submitted UGC NET Economics mock tests. View individual performance scorecards, accuracy rates, and export candidate data.
+              Real-time Firestore database sync for all UGC NET Economics mock test attempts. Track candidate full names, phone numbers, email addresses, score breakdowns, and time taken live as students submit their tests.
             </p>
           </div>
 
@@ -195,15 +233,15 @@ export const AdminScoresPage: React.FC = () => {
             <button
               onClick={handleExportCSV}
               disabled={submittedRecords.length === 0}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Export to CSV (Excel)</span>
+              <span>Export CSV (Excel)</span>
             </button>
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Record New Score</span>
@@ -223,7 +261,10 @@ export const AdminScoresPage: React.FC = () => {
           <p className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-slate-900">
             {totalSubmissions}
           </p>
-          <p className="text-[11px] text-indigo-600 font-semibold">Persisted in local storage</p>
+          <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            <span>Synced to Firestore cloud</span>
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
@@ -265,11 +306,11 @@ export const AdminScoresPage: React.FC = () => {
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Search */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-96">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search student name, roll no, test..."
+            placeholder="Search student name, phone, email, roll no..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
@@ -280,11 +321,11 @@ export const AdminScoresPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-            {(['All', 'Mock Test 01', 'Mock Test 02'] as const).map((testName) => (
+            {(['All', 'Mock Test 01', 'Mock Test 02', 'Mock Test 03', 'Mock Test 04'] as const).map((testName) => (
               <button
                 key={testName}
                 onClick={() => setSelectedTestFilter(testName)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   selectedTestFilter === testName
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -300,7 +341,7 @@ export const AdminScoresPage: React.FC = () => {
               <button
                 key={tier}
                 onClick={() => setSelectedTierFilter(tier)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   selectedTierFilter === tier
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -318,7 +359,7 @@ export const AdminScoresPage: React.FC = () => {
                   clearAllSubmittedRecords();
                 }
               }}
-              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+              className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
               title="Clear all records"
             >
               <Trash2 className="w-4 h-4" />
@@ -330,14 +371,22 @@ export const AdminScoresPage: React.FC = () => {
 
       {/* 4. Submitted Records Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-['Outfit'] font-bold text-lg text-slate-900">
-              Submitted Mock Test Records ({filteredRecords.length})
+            <h3 className="font-['Outfit'] font-bold text-lg text-slate-900 flex items-center gap-2">
+              <span>Live Test Submissions Table</span>
+              <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                {filteredRecords.length} Results
+              </span>
             </h3>
             <p className="text-xs text-slate-500">
-              Complete chronological breakdown of student attempts and results
+              Live updates directly from Firestore `test_results` collection
             </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Real-time polling active</span>
           </div>
         </div>
 
@@ -348,14 +397,14 @@ export const AdminScoresPage: React.FC = () => {
               No Test Submissions Found
             </h4>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Whenever a candidate starts and submits any mock test, their score, accuracy, time taken, and answers are automatically recorded here.
+              Whenever a candidate starts and submits any mock test, their full name, phone number, email, score, accuracy, and time taken are automatically synced here in real time.
             </p>
             <div className="pt-2">
               <button
                 onClick={() => setCurrentView('tests')}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
               >
-                Launch Mock Test 01
+                Launch Mock Test Series
               </button>
             </div>
           </div>
@@ -364,11 +413,12 @@ export const AdminScoresPage: React.FC = () => {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/90 text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Student & Roll No</th>
+                  <th className="py-3.5 px-4">Student Name</th>
+                  <th className="py-3.5 px-4">Phone Number</th>
+                  <th className="py-3.5 px-4">Email Address</th>
                   <th className="py-3.5 px-4">Test Title</th>
-                  <th className="py-3.5 px-4 text-center">Score</th>
-                  <th className="py-3.5 px-4 text-center">Accuracy</th>
-                  <th className="py-3.5 px-4 text-center">Breakdown (C/W/U)</th>
+                  <th className="py-3.5 px-4 text-center">Score / Marks</th>
+                  <th className="py-3.5 px-4 text-center">Accuracy %</th>
                   <th className="py-3.5 px-4 text-center">Time Taken</th>
                   <th className="py-3.5 px-4">Date / Time</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -378,6 +428,8 @@ export const AdminScoresPage: React.FC = () => {
                 {filteredRecords.map((record) => {
                   const isJRF = record.score >= 160;
                   const isNET = record.score >= 136 && record.score < 160;
+                  const phoneDisplay = record.phoneNumber || record.phone || '—';
+                  const emailDisplay = record.email || record.studentEmail || '—';
 
                   return (
                     <tr key={record.id} className="hover:bg-slate-50/80 transition-colors group">
@@ -399,16 +451,40 @@ export const AdminScoresPage: React.FC = () => {
                         </div>
                       </td>
 
+                      {/* Phone Number */}
+                      <td className="py-4 px-4 font-mono text-xs text-slate-700">
+                        {phoneDisplay !== '—' ? (
+                          <span className="inline-flex items-center gap-1 text-slate-800 font-medium">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <span>{phoneDisplay}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+
+                      {/* Email Address */}
+                      <td className="py-4 px-4 text-xs text-slate-700">
+                        {emailDisplay !== '—' ? (
+                          <span className="inline-flex items-center gap-1 text-slate-800 font-medium">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <span>{emailDisplay}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+
                       {/* Test Title */}
-                      <td className="py-4 px-4 font-medium text-slate-800">
+                      <td className="py-4 px-4 font-medium text-slate-800 max-w-[200px] truncate" title={record.testTitle}>
                         {record.testTitle}
                       </td>
 
                       {/* Score */}
                       <td className="py-4 px-4 text-center">
                         <div className="inline-flex flex-col items-center">
-                          <span className={`font-['Outfit'] font-bold text-base ${isJRF ? 'text-emerald-600' : isNET ? 'text-indigo-600' : 'text-slate-800'}`}>
-                            {record.score} <span className="text-xs text-slate-400 font-normal">/ {record.totalMarks}</span>
+                          <span className={`font-['Outfit'] font-bold text-sm sm:text-base ${isJRF ? 'text-emerald-600' : isNET ? 'text-indigo-600' : 'text-slate-800'}`}>
+                            {record.score} <span className="text-xs text-slate-400 font-normal">/ {record.totalMarks || record.maxScore || 200}</span>
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
                             {record.percentile}%ile
@@ -418,27 +494,18 @@ export const AdminScoresPage: React.FC = () => {
 
                       {/* Accuracy */}
                       <td className="py-4 px-4 text-center font-mono font-bold text-slate-800">
-                        <span className={`px-2 py-0.5 rounded-md ${record.accuracy >= 80 ? 'bg-emerald-50 text-emerald-700' : record.accuracy >= 65 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>
+                        <span className={`px-2.5 py-0.5 rounded-md ${record.accuracy >= 80 ? 'bg-emerald-50 text-emerald-700' : record.accuracy >= 65 ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'}`}>
                           {record.accuracy}%
                         </span>
                       </td>
 
-                      {/* Breakdown */}
-                      <td className="py-4 px-4 text-center font-mono text-xs">
-                        <span className="text-emerald-600 font-bold">{record.correctCount}C</span>
-                        <span className="text-slate-300 mx-1">/</span>
-                        <span className="text-rose-500 font-bold">{record.wrongCount}W</span>
-                        <span className="text-slate-300 mx-1">/</span>
-                        <span className="text-slate-400">{record.unattemptedCount}U</span>
-                      </td>
-
                       {/* Time Taken */}
                       <td className="py-4 px-4 text-center font-mono text-xs text-slate-600">
-                        {record.timeTakenMinutes} min
+                        {record.timeTaken || `${record.timeTakenMinutes} min`}
                       </td>
 
                       {/* Date */}
-                      <td className="py-4 px-4 text-xs text-slate-500">
+                      <td className="py-4 px-4 text-xs text-slate-500 whitespace-nowrap">
                         {record.formattedDate || 'Recent'}
                       </td>
 
@@ -447,7 +514,7 @@ export const AdminScoresPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => viewRecordResult(record)}
-                            className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                            className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                             title="Inspect complete score analysis"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -456,7 +523,7 @@ export const AdminScoresPage: React.FC = () => {
 
                           <button
                             onClick={() => deleteSubmittedRecord(record.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             title="Delete this record"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -482,13 +549,13 @@ export const AdminScoresPage: React.FC = () => {
                 Log Student Score Entry
               </h3>
               <p className="text-xs text-slate-500">
-                Manually record a candidate's UGC NET Economics mock test result.
+                Manually record a candidate's UGC NET Economics mock test result to Firestore.
               </p>
             </div>
 
             <form onSubmit={handleAddManualSubmission} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700">Student Full Name</label>
+                <label className="text-xs font-semibold text-slate-700">Student Full Name *</label>
                 <input
                   type="text"
                   required
@@ -497,6 +564,32 @@ export const AdminScoresPage: React.FC = () => {
                   onChange={(e) => setNewEntry({ ...newEntry, studentName: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Phone Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={newEntry.phone}
+                    onChange={(e) => setNewEntry({ ...newEntry, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. ramesh@gmail.com"
+                    value={newEntry.email}
+                    onChange={(e) => setNewEntry({ ...newEntry, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-hidden"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -557,13 +650,13 @@ export const AdminScoresPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Save Submission
                 </button>
@@ -576,3 +669,4 @@ export const AdminScoresPage: React.FC = () => {
     </div>
   );
 };
+

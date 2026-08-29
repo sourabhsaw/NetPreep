@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTest } from '../context/TestContext';
 import {
   FileText,
@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Check,
   User,
+  Phone,
+  Mail,
   Hash,
   Sparkles,
   Info,
@@ -24,17 +26,37 @@ export const InstructionsScreen: React.FC = () => {
     confirmAndLaunchTest,
     setCurrentView,
     studentProfile,
-    updateStudentProfile
+    updateStudentProfile,
+    registerStudent
   } = useTest();
 
   const [candidateName, setCandidateName] = useState<string>(
     studentProfile.name && studentProfile.name !== 'Rahul' ? studentProfile.name : ''
   );
+  const [candidatePhone, setCandidatePhone] = useState<string>(
+    studentProfile.phone || ''
+  );
+  const [candidateEmail, setCandidateEmail] = useState<string>(
+    studentProfile.email && studentProfile.email !== 'rahul.ugcnet@example.com' ? studentProfile.email : ''
+  );
   const [candidateRoll, setCandidateRoll] = useState<string>(
     studentProfile.rollNumber || `UGC-NET-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
   );
   const [agreementChecked, setAgreementChecked] = useState(true);
-  const [nameTouched, setNameTouched] = useState(false);
+  const [touched, setTouched] = useState({ name: false, phone: false, email: false });
+
+  // Sync state if studentProfile changes
+  useEffect(() => {
+    if (studentProfile.name && studentProfile.name !== 'Rahul' && !candidateName) {
+      setCandidateName(studentProfile.name);
+    }
+    if (studentProfile.phone && !candidatePhone) {
+      setCandidatePhone(studentProfile.phone);
+    }
+    if (studentProfile.email && studentProfile.email !== 'rahul.ugcnet@example.com' && !candidateEmail) {
+      setCandidateEmail(studentProfile.email);
+    }
+  }, [studentProfile]);
 
   const testTitle = selectedTest?.title || 'UGC NET Economics — Mock Test 01';
   const totalQuestions = selectedTest?.totalQuestions || 100;
@@ -42,18 +64,32 @@ export const InstructionsScreen: React.FC = () => {
   const totalMarks = selectedTest?.totalMarks || 200;
 
   const isNameValid = candidateName.trim().length >= 2;
-  const canStartTest = isNameValid && agreementChecked;
+  const cleanPhone = candidatePhone.replace(/[^0-9]/g, '');
+  const isPhoneValid = cleanPhone.length >= 10;
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateEmail.trim());
 
-  const handleStartTest = () => {
-    if (!isNameValid) {
-      setNameTouched(true);
-      return;
+  const canStartTest = isNameValid && isPhoneValid && isEmailValid && agreementChecked;
+
+  const handleStartTest = async () => {
+    setTouched({ name: true, phone: true, email: true });
+    if (!canStartTest) return;
+
+    try {
+      await registerStudent({
+        name: candidateName.trim(),
+        phone: cleanPhone,
+        email: candidateEmail.trim().toLowerCase()
+      });
+    } catch (e) {
+      console.warn('Registration note:', e);
+      updateStudentProfile({
+        name: candidateName.trim(),
+        phone: cleanPhone,
+        email: candidateEmail.trim().toLowerCase(),
+        rollNumber: candidateRoll.trim()
+      });
     }
-    // Update candidate profile state and local storage before launch
-    updateStudentProfile({
-      name: candidateName.trim(),
-      rollNumber: candidateRoll.trim()
-    });
+
     confirmAndLaunchTest();
   };
 
@@ -105,23 +141,23 @@ export const InstructionsScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-['Outfit'] font-bold text-base text-slate-900 flex items-center gap-2">
-                  <span>Candidate Registration & Verification</span>
+                  <span>Mandatory Candidate Registration</span>
                   <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                    * Mandatory
+                    * Required to Start
                   </span>
                 </h3>
                 <p className="text-xs text-slate-600">
-                  Please enter your name below. This name will appear on your scorecard, result analysis, and rank list.
+                  Enter your verified details below. Your scorecard, all-India rank analysis, and admin live tracking will be attached to these details.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
             {/* Candidate Full Name Input (Required) */}
             <div className="space-y-1.5">
               <label htmlFor="candidate-name-input" className="block text-xs font-bold text-slate-800">
-                Candidate Full Name <span className="text-rose-600">*</span>
+                Full Name <span className="text-rose-600">*</span>
               </label>
               <div className="relative">
                 <input
@@ -130,11 +166,12 @@ export const InstructionsScreen: React.FC = () => {
                   value={candidateName}
                   onChange={(e) => {
                     setCandidateName(e.target.value);
-                    if (!nameTouched) setNameTouched(true);
+                    if (!touched.name) setTouched((p) => ({ ...p, name: true }));
                   }}
-                  placeholder="e.g. Sourabh Saw / Ananya Verma"
-                  className={`w-full pl-9 pr-10 py-2.5 bg-white rounded-xl border text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all ${
-                    nameTouched && !isNameValid
+                  onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                  placeholder="e.g. Sourabh Saw"
+                  className={`w-full pl-9 pr-8 py-2.5 bg-white rounded-xl border text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all ${
+                    touched.name && !isNameValid
                       ? 'border-rose-400 focus:ring-2 focus:ring-rose-200'
                       : isNameValid
                       ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-200'
@@ -143,45 +180,90 @@ export const InstructionsScreen: React.FC = () => {
                 />
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                 {isNameValid && (
-                  <CheckCircle className="w-4 h-4 text-emerald-600 absolute right-3 top-3 pointer-events-none" />
+                  <CheckCircle className="w-4 h-4 text-emerald-600 absolute right-2.5 top-3 pointer-events-none" />
                 )}
               </div>
-              {nameTouched && !isNameValid && (
-                <p className="text-xs text-rose-600 flex items-center gap-1 font-medium pt-0.5">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>Please enter your full name (minimum 2 characters) before starting.</span>
-                </p>
+              {touched.name && !isNameValid && (
+                <p className="text-[11px] text-rose-600 font-medium">Candidate name is required (min 2 chars)</p>
               )}
             </div>
 
-            {/* Candidate Roll Number Input */}
+            {/* Candidate Phone Number (Required) */}
             <div className="space-y-1.5">
-              <label htmlFor="candidate-roll-input" className="block text-xs font-bold text-slate-800">
-                Roll Number / Reg. ID
+              <label htmlFor="candidate-phone-input" className="block text-xs font-bold text-slate-800">
+                Phone Number <span className="text-rose-600">*</span>
               </label>
               <div className="relative">
                 <input
-                  id="candidate-roll-input"
-                  type="text"
-                  value={candidateRoll}
-                  onChange={(e) => setCandidateRoll(e.target.value)}
-                  placeholder="UGC-NET-2026-XXXX"
-                  className="w-full pl-9 pr-4 py-2.5 bg-white rounded-xl border border-slate-300 text-sm font-mono font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition-all"
+                  id="candidate-phone-input"
+                  type="tel"
+                  value={candidatePhone}
+                  onChange={(e) => {
+                    setCandidatePhone(e.target.value);
+                    if (!touched.phone) setTouched((p) => ({ ...p, phone: true }));
+                  }}
+                  onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
+                  placeholder="e.g. 9876543210"
+                  maxLength={15}
+                  className={`w-full pl-9 pr-8 py-2.5 bg-white rounded-xl border text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all ${
+                    touched.phone && !isPhoneValid
+                      ? 'border-rose-400 focus:ring-2 focus:ring-rose-200'
+                      : isPhoneValid
+                      ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-200'
+                      : 'border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500'
+                  }`}
                 />
-                <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                {isPhoneValid && (
+                  <CheckCircle className="w-4 h-4 text-emerald-600 absolute right-2.5 top-3 pointer-events-none" />
+                )}
               </div>
-              <p className="text-[11px] text-slate-500">
-                Auto-assigned registration number for exam simulation.
-              </p>
+              {touched.phone && !isPhoneValid && (
+                <p className="text-[11px] text-rose-600 font-medium">Enter 10-digit mobile number</p>
+              )}
+            </div>
+
+            {/* Candidate Email Address (Required) */}
+            <div className="space-y-1.5">
+              <label htmlFor="candidate-email-input" className="block text-xs font-bold text-slate-800">
+                Email Address <span className="text-rose-600">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="candidate-email-input"
+                  type="email"
+                  value={candidateEmail}
+                  onChange={(e) => {
+                    setCandidateEmail(e.target.value);
+                    if (!touched.email) setTouched((p) => ({ ...p, email: true }));
+                  }}
+                  onBlur={() => setTouched((p) => ({ ...p, email: true }))}
+                  placeholder="e.g. sourabh@gmail.com"
+                  className={`w-full pl-9 pr-8 py-2.5 bg-white rounded-xl border text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all ${
+                    touched.email && !isEmailValid
+                      ? 'border-rose-400 focus:ring-2 focus:ring-rose-200'
+                      : isEmailValid
+                      ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-200'
+                      : 'border-slate-300 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500'
+                  }`}
+                />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                {isEmailValid && (
+                  <CheckCircle className="w-4 h-4 text-emerald-600 absolute right-2.5 top-3 pointer-events-none" />
+                )}
+              </div>
+              {touched.email && !isEmailValid && (
+                <p className="text-[11px] text-rose-600 font-medium">Enter valid email address</p>
+              )}
             </div>
           </div>
 
           {/* Active Candidate Confirmation Pill */}
-          {isNameValid && (
+          {isNameValid && isPhoneValid && isEmailValid && (
             <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium animate-fadeIn">
               <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                Verified candidate: <strong className="font-bold text-emerald-950">{candidateName.trim()}</strong> (Roll No: <span className="font-mono">{candidateRoll}</span>). Ready for examination.
+                Verified candidate: <strong className="font-bold text-emerald-950">{candidateName.trim()}</strong> • {cleanPhone} • {candidateEmail.trim().toLowerCase()} (Roll No: <span className="font-mono">{candidateRoll}</span>). Ready for examination.
               </span>
             </div>
           )}
@@ -335,8 +417,8 @@ export const InstructionsScreen: React.FC = () => {
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
               <Info className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                {!isNameValid
-                  ? '⚠️ Please enter your Full Name in the Candidate Registration section above to unlock the Start Test button.'
+                {!isNameValid || !isPhoneValid || !isEmailValid
+                  ? '⚠️ Please enter your Full Name, Phone Number, and Email in the Candidate Registration section above to unlock the Start Test button.'
                   : '⚠️ Please accept the declaration checkbox above to proceed.'}
               </span>
             </div>
@@ -362,7 +444,7 @@ export const InstructionsScreen: React.FC = () => {
               }`}
             >
               <Play className="w-4 h-4 fill-white" />
-              <span>{isNameValid ? `Start Test as ${candidateName.trim()}` : 'Enter Name to Start Test'}</span>
+              <span>{isNameValid ? `Start Test as ${candidateName.trim()}` : 'Complete Registration to Start Test'}</span>
             </button>
           </div>
 
@@ -373,4 +455,5 @@ export const InstructionsScreen: React.FC = () => {
     </div>
   );
 };
+
 

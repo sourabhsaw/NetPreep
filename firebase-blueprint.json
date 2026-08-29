@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "test_results": {
+      "title": "Test Result Submission",
+      "description": "Student mock test attempt records with scores, accuracy, and timestamps",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string", "description": "Candidate full name" },
+        "phoneNumber": { "type": "string", "description": "Candidate phone number" },
+        "email": { "type": "string", "description": "Candidate email address" },
+        "testId": { "type": "number", "description": "ID of the mock test" },
+        "testTitle": { "type": "string", "description": "Title of the mock test" },
+        "score": { "type": "number", "description": "Marks obtained by the candidate" },
+        "maxScore": { "type": "number", "description": "Maximum marks possible (e.g. 200)" },
+        "totalQuestions": { "type": "number", "description": "Total number of questions (e.g. 100)" },
+        "correctAnswers": { "type": "number", "description": "Count of correct answers" },
+        "incorrectAnswers": { "type": "number", "description": "Count of incorrect answers" },
+        "unattempted": { "type": "number", "description": "Count of skipped/unattempted questions" },
+        "accuracy": { "type": "number", "description": "Percentage accuracy achieved" },
+        "timeTakenSeconds": { "type": "number", "description": "Time taken in seconds" },
+        "timeTakenFormatted": { "type": "string", "description": "Human readable time taken e.g. 74m 20s" },
+        "timestamp": { "type": "string", "description": "ISO timestamp of completion" },
+        "submittedAt": { "type": "string", "description": "Formatted date and time of completion" }
+      },
+      "required": ["studentName", "score", "testId", "testTitle"]
+    },
+    "students": {
+      "title": "Registered Student",
+      "description": "Student profile registered before taking mock tests",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Student full name" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "email": { "type": "string", "description": "Email address" },
+        "rollNumber": { "type": "string", "description": "Registration ID / Roll Number" },
+        "registeredAt": { "type": "string", "description": "Registration timestamp" }
+      },
+      "required": ["name", "phone", "email"]
+    }
+  }
+}

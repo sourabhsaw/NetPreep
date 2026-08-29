@@ -10,6 +10,13 @@ import {
 } from '../types';
 import { getQuestionsForTest, mockTest01Questions } from '../data/questionsData';
 import { MOCK_TESTS_CATALOG, INITIAL_STUDENT_PROFILE } from '../data/mockTestsData';
+import {
+  initAuth,
+  saveStudentToFirestore,
+  saveTestResultToFirestore,
+  subscribeToTestResults,
+  deleteTestResultFromFirestore
+} from '../firebase';
 import confetti from 'canvas-confetti';
 
 export type AppView =
@@ -40,12 +47,16 @@ interface TestContextType {
   testHistory: TestResult[];
   studentProfile: StudentProfile;
   updateStudentProfile: (profile: Partial<StudentProfile>) => void;
+  registerStudent: (details: { name: string; phone: string; email: string }) => Promise<void>;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  isFirestoreConnected: boolean;
   bookmarks: number[];
   toggleBookmark: (questionId: number) => void;
   
   // Admin Submitted Scores Log
   submittedRecords: SubmittedTestRecord[];
-  deleteSubmittedRecord: (id: string) => void;
+  deleteSubmittedRecord: (id: string) => Promise<void>;
   clearAllSubmittedRecords: () => void;
   addSubmittedRecord: (record: SubmittedTestRecord) => void;
   viewRecordResult: (record: SubmittedTestRecord) => void;
@@ -74,11 +85,15 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
   {
     id: 'rec_init_1',
     studentName: 'Rahul Sharma',
+    phoneNumber: '9876543210',
+    phone: '9876543210',
+    email: 'rahul.ugcnet@example.com',
     studentEmail: 'rahul.ugcnet@example.com',
     studentRoll: 'UGC-NET-2026-8941',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
     score: 142,
+    maxScore: 200,
     totalMarks: 200,
     totalQuestions: 100,
     correctCount: 71,
@@ -86,6 +101,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     unattemptedCount: 10,
     accuracy: 78,
     percentile: 84.62,
+    timeTaken: '98 min',
     timeTakenMinutes: 98,
     timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
     formattedDate: 'Today, 02:45 PM',
@@ -95,11 +111,15 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
   {
     id: 'rec_init_2',
     studentName: 'Ankit Deshmukh',
+    phoneNumber: '9823419087',
+    phone: '9823419087',
+    email: 'ankit.jrf@example.com',
     studentEmail: 'ankit.jrf@example.com',
     studentRoll: 'UGC-NET-2026-3312',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
     score: 184,
+    maxScore: 200,
     totalMarks: 200,
     totalQuestions: 100,
     correctCount: 92,
@@ -107,6 +127,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     unattemptedCount: 2,
     accuracy: 94,
     percentile: 99.4,
+    timeTaken: '105 min',
     timeTakenMinutes: 105,
     timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
     formattedDate: 'Today, 10:15 AM',
@@ -116,11 +137,15 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
   {
     id: 'rec_init_3',
     studentName: 'Priya Mukherjee',
+    phoneNumber: '9811223344',
+    phone: '9811223344',
+    email: 'priya.mukh@example.com',
     studentEmail: 'priya.mukh@example.com',
     studentRoll: 'UGC-NET-2026-4489',
     testId: 2,
     testTitle: 'UGC NET Economics — Mock Test 02',
     score: 178,
+    maxScore: 200,
     totalMarks: 200,
     totalQuestions: 100,
     correctCount: 89,
@@ -128,6 +153,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     unattemptedCount: 3,
     accuracy: 91,
     percentile: 98.2,
+    timeTaken: '112 min',
     timeTakenMinutes: 112,
     timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
     formattedDate: 'Yesterday, 04:30 PM',
@@ -137,11 +163,15 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
   {
     id: 'rec_init_4',
     studentName: 'Pooja Agarwal',
+    phoneNumber: '9765432109',
+    phone: '9765432109',
+    email: 'pooja.eco@example.com',
     studentEmail: 'pooja.eco@example.com',
     studentRoll: 'UGC-NET-2026-7821',
     testId: 1,
     testTitle: 'UGC NET Economics — Mock Test 01',
     score: 156,
+    maxScore: 200,
     totalMarks: 200,
     totalQuestions: 100,
     correctCount: 78,
@@ -149,6 +179,7 @@ const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
     unattemptedCount: 8,
     accuracy: 85,
     percentile: 91.8,
+    timeTaken: '115 min',
     timeTakenMinutes: 115,
     timestamp: new Date(Date.now() - 3600000 * 48).toISOString(),
     formattedDate: '2 days ago',
@@ -169,14 +200,41 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isTestActive, setIsTestActive] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testHistory, setTestHistory] = useState<TestResult[]>([]);
-  const [studentProfile, setStudentProfile] = useState<StudentProfile>(INITIAL_STUDENT_PROFILE);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile>(() => {
+    try {
+      const savedProfile = localStorage.getItem('netprep_student_profile');
+      if (savedProfile) {
+        return JSON.parse(savedProfile);
+      }
+    } catch (e) {
+      // ignore
+    }
+    return {
+      name: '',
+      phone: '',
+      email: '',
+      rollNumber: `UGC-NET-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      targetExam: 'UGC NET / JRF Economics Dec 2026',
+      isRegistered: false,
+      testsAttempted: 0,
+      averageScore: 0,
+      bestScore: 0,
+      averageAccuracy: 0,
+      currentRank: 1
+    };
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isFirestoreConnected, setIsFirestoreConnected] = useState<boolean>(false);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [solutionsFilter, setSolutionsFilter] = useState<'all' | 'wrong' | 'correct' | 'unattempted' | 'marked'>('all');
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string>('All');
   const [submittedRecords, setSubmittedRecords] = useState<SubmittedTestRecord[]>([]);
 
-  // Load persistence
+  // Initialize Firebase Auth & Real-Time Firestore Sync
   useEffect(() => {
+    initAuth().catch((err) => console.warn('Auth init note:', err));
+
+    // Load initial local history and bookmarks
     try {
       const savedHistory = localStorage.getItem('netprep_test_history');
       if (savedHistory) setTestHistory(JSON.parse(savedHistory));
@@ -184,52 +242,137 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedBookmarks = localStorage.getItem('netprep_bookmarks');
       if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
 
-      const savedProfile = localStorage.getItem('netprep_student_profile');
-      if (savedProfile) setStudentProfile(JSON.parse(savedProfile));
-
       const savedAdminScores = localStorage.getItem('netprep_admin_submitted_scores');
       if (savedAdminScores) {
         setSubmittedRecords(JSON.parse(savedAdminScores));
       } else {
         setSubmittedRecords(DEFAULT_SAMPLE_SUBMISSIONS);
-        localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(DEFAULT_SAMPLE_SUBMISSIONS));
       }
     } catch (e) {
-      console.error('Error loading saved state', e);
+      console.error('Error loading local state', e);
     }
+
+    // Subscribe to live Firestore `test_results` collection
+    const unsubscribe = subscribeToTestResults(
+      (firestoreRecords) => {
+        setIsFirestoreConnected(true);
+        if (firestoreRecords.length > 0) {
+          setSubmittedRecords(firestoreRecords);
+          try {
+            localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(firestoreRecords));
+          } catch (e) {
+            // safe storage
+          }
+        }
+      },
+      (err) => {
+        console.warn('Firestore live listener offline fallback:', err);
+        setIsFirestoreConnected(false);
+      }
+    );
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
-  // Admin record management
-  const deleteSubmittedRecord = (id: string) => {
-    setSubmittedRecords((prev) => {
-      const updated = prev.filter((r) => r.id !== id);
-      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+  // Register Student Profile in State & Firestore
+  const registerStudent = async (details: { name: string; phone: string; email: string }) => {
+    const updatedProfile: StudentProfile = {
+      ...studentProfile,
+      name: details.name.trim(),
+      phone: details.phone.trim(),
+      email: details.email.trim().toLowerCase(),
+      isRegistered: true,
+      rollNumber: studentProfile.rollNumber || `UGC-NET-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+
+    setStudentProfile(updatedProfile);
+    try {
+      localStorage.setItem('netprep_student_profile', JSON.stringify(updatedProfile));
+    } catch (e) {
+      // safe storage
+    }
+
+    // Push to Firestore students collection
+    await saveStudentToFirestore({
+      name: updatedProfile.name,
+      phone: updatedProfile.phone || '',
+      email: updatedProfile.email,
+      rollNumber: updatedProfile.rollNumber
+    });
+  };
+
+  // Update profile without full re-registration
+  const updateStudentProfile = (newProfile: Partial<StudentProfile>) => {
+    setStudentProfile((prev) => {
+      const updated = { ...prev, ...newProfile };
+      try {
+        localStorage.setItem('netprep_student_profile', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
       return updated;
     });
+
+    if (newProfile.name || newProfile.phone || newProfile.email) {
+      saveStudentToFirestore({
+        name: newProfile.name || studentProfile.name,
+        phone: newProfile.phone || studentProfile.phone || '',
+        email: newProfile.email || studentProfile.email,
+        rollNumber: newProfile.rollNumber || studentProfile.rollNumber
+      }).catch((e) => console.warn('Sync profile note:', e));
+    }
+  };
+
+  // Admin record management
+  const deleteSubmittedRecord = async (id: string) => {
+    setSubmittedRecords((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
+      try {
+        localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
+      return updated;
+    });
+
+    // Also delete from Firestore
+    await deleteTestResultFromFirestore(id);
   };
 
   const clearAllSubmittedRecords = () => {
     setSubmittedRecords([]);
-    localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify([]));
+    try {
+      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify([]));
+    } catch (e) {
+      // safe storage
+    }
   };
 
-  const addSubmittedRecord = (record: SubmittedTestRecord) => {
+  const addSubmittedRecord = async (record: SubmittedTestRecord) => {
     setSubmittedRecords((prev) => {
       const updated = [record, ...prev];
-      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      try {
+        localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
       return updated;
     });
+
+    // Also push to Firestore
+    await saveTestResultToFirestore(record);
   };
 
   const viewRecordResult = (record: SubmittedTestRecord) => {
-    // Reconstruct a TestResult object to view in result screen
     const reconstructedResult: TestResult = {
       testId: record.testId,
       testTitle: record.testTitle,
       completedAt: record.formattedDate,
       score: record.score,
-      totalMarks: record.totalMarks,
-      totalQuestions: record.totalQuestions,
+      totalMarks: record.totalMarks || record.maxScore || 200,
+      totalQuestions: record.totalQuestions || 100,
       correctCount: record.correctCount,
       wrongCount: record.wrongCount,
       unattemptedCount: record.unattemptedCount,
@@ -250,7 +393,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       strongAreas: record.strongAreas || ['Indian Economy — 90%', 'Micro Economics — 87%'],
       weakAreas: record.weakAreas || ['Econometrics — 50%', 'Statistics — 60%'],
-      recommendation: `Candidate ${record.studentName} performed well with ${record.accuracy}% accuracy. Recommend focusing on numerical problem-solving and weak topic revision.`
+      recommendation: `Candidate ${record.studentName} performed with ${record.accuracy}% accuracy (${record.score}/${record.totalMarks || 200}). Recommend focusing on numerical problem-solving and weak topic revision.`
     };
 
     setTestResult(reconstructedResult);
@@ -260,22 +403,17 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Sync profile changes
-  const updateStudentProfile = (newProfile: Partial<StudentProfile>) => {
-    setStudentProfile((prev) => {
-      const updated = { ...prev, ...newProfile };
-      localStorage.setItem('netprep_student_profile', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
   // Toggle bookmark
   const toggleBookmark = (questionId: number) => {
     setBookmarks((prev) => {
       const updated = prev.includes(questionId)
         ? prev.filter((id) => id !== questionId)
         : [...prev, questionId];
-      localStorage.setItem('netprep_bookmarks', JSON.stringify(updated));
+      try {
+        localStorage.setItem('netprep_bookmarks', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
       return updated;
     });
   };
@@ -329,6 +467,12 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Launch the CBT test
   const confirmAndLaunchTest = () => {
+    // If student has not provided name or is missing, trigger registration modal
+    if (!studentProfile.name || studentProfile.name.trim().length < 2) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const totalQ = getQuestionsForTest(selectedTest?.id || 1);
     setQuestions(totalQ);
 
@@ -457,7 +601,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Calculate & Submit Test Result
+  // Calculate & Submit Test Result (Syncs to Firestore `test_results`)
   const submitTest = useCallback(() => {
     setIsTestActive(false);
 
@@ -522,6 +666,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const testTotalDurationMin = selectedTest?.durationMinutes || 120;
     const timeTakenSeconds = (testTotalDurationMin * 60) - timeRemainingSeconds;
     const timeTakenMinutes = Math.max(1, Math.round(timeTakenSeconds / 60));
+    const timeTakenFormatted = `${timeTakenMinutes} min`;
 
     let recommendation = 'Practice more questions from Econometrics and Statistics to strengthen conceptual clarity.';
     if (weakAreas.length > 0) {
@@ -559,19 +704,27 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTestResult(calculatedResult);
     setTestHistory((prev) => {
       const updated = [calculatedResult, ...prev.slice(0, 19)];
-      localStorage.setItem('netprep_test_history', JSON.stringify(updated));
+      try {
+        localStorage.setItem('netprep_test_history', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
       return updated;
     });
 
-    // Save student test score for Owner/Admin View
+    // Complete Student Test Record object for Firestore & Admin
     const newStudentLog: SubmittedTestRecord = {
       id: 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      studentName: studentProfile.name || 'Rahul',
-      studentEmail: studentProfile.email || 'student@example.com',
-      studentRoll: studentProfile.rollNumber || 'UGC-NET-2026-8941',
+      studentName: studentProfile.name || 'Candidate',
+      phoneNumber: studentProfile.phone || '',
+      phone: studentProfile.phone || '',
+      email: studentProfile.email || '',
+      studentEmail: studentProfile.email || '',
+      studentRoll: studentProfile.rollNumber || `UGC-NET-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       testId: selectedTest?.id || 1,
       testTitle: selectedTest?.title || 'UGC NET Economics — Mock Test 01',
       score,
+      maxScore: totalMarks,
       totalMarks,
       totalQuestions,
       correctCount,
@@ -579,6 +732,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unattemptedCount,
       accuracy,
       percentile,
+      timeTaken: timeTakenFormatted,
       timeTakenMinutes,
       timestamp: new Date().toISOString(),
       formattedDate: new Date().toLocaleDateString('en-IN', {
@@ -593,10 +747,24 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       weakAreas: weakAreas.length > 0 ? weakAreas : ['Econometrics — 50%', 'Statistics — 60%']
     };
 
+    // 1. Update local records immediately for zero latency
     setSubmittedRecords((prev) => {
       const updated = [newStudentLog, ...prev];
-      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      try {
+        localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      } catch (e) {
+        // safe storage
+      }
       return updated;
+    });
+
+    // 2. Real-Time Sync to Firebase Firestore
+    saveTestResultToFirestore(newStudentLog).then((docId) => {
+      if (docId) {
+        console.log('✅ Real-time score synced to Firestore, Doc ID:', docId);
+      }
+    }).catch((err) => {
+      console.warn('Firestore sync note:', err);
     });
 
     setCurrentView('result');
@@ -721,6 +889,10 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         testHistory,
         studentProfile,
         updateStudentProfile,
+        registerStudent,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        isFirestoreConnected,
         bookmarks,
         toggleBookmark,
         submittedRecords,
@@ -757,4 +929,5 @@ export const useTest = (): TestContextType => {
   }
   return context;
 };
+
 
