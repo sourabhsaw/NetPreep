@@ -33,7 +33,7 @@ export const AboutContactPage: React.FC = () => {
   const faqs = [
     {
       q: 'How many questions are in each UGC NET Economics mock test?',
-      a: 'Each full-length test contains 100 questions carrying 200 marks (2 marks per question) with a duration of 180 minutes, following the exact NTA Paper II pattern.'
+      a: 'Each full-length test contains 100 questions carrying 200 marks (2 marks per question) with a duration of 120 minutes, following the exact NTA Paper II pattern.'
     },
     {
       q: 'Is there any negative marking in UGC NET Economics?',
@@ -105,35 +105,27 @@ export const AboutContactPage: React.FC = () => {
         </div>
 
         {/* Direct Helpline Card */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-indigo-50 to-blue-50/60 p-6 sm:p-8 rounded-3xl border border-indigo-100 space-y-5">
+        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-6 sm:p-8 rounded-3xl border border-emerald-100 space-y-5">
           <div className="space-y-1">
             <h3 className="font-['Outfit'] font-bold text-lg text-slate-900 flex items-center gap-2">
-              <Phone className="w-5 h-5 text-indigo-600" />
-              <span>Direct Mentorship Helplines</span>
+              <Phone className="w-5 h-5 text-emerald-600" />
+              <span>WhatsApp & Email Support</span>
             </h3>
             <p className="text-xs text-slate-600">
-              Feel free to call or WhatsApp us for mock test guidance or doubts:
+              Reach out directly on WhatsApp for test series inquiries, mock test guidance, or syllabus doubts:
             </p>
           </div>
 
           <div className="space-y-3 font-mono">
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs">
-              <span className="text-xs font-sans text-slate-500">Astha Jha</span>
+              <span className="text-xs font-sans text-slate-500">Official WhatsApp</span>
               <a
-                href="tel:9348766896"
-                className="font-bold text-indigo-600 hover:text-indigo-800 text-sm hover:underline"
+                href="https://wa.me/91824992831?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-emerald-600 hover:text-emerald-800 text-sm hover:underline"
               >
-                +91 9348766896
-              </a>
-            </div>
-
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs">
-              <span className="text-xs font-sans text-slate-500">Sourabh Saw</span>
-              <a
-                href="tel:6370432509"
-                className="font-bold text-indigo-600 hover:text-indigo-800 text-sm hover:underline"
-              >
-                +91 6370432509
+                +91 824992831
               </a>
             </div>
 
@@ -145,6 +137,13 @@ export const AboutContactPage: React.FC = () => {
               >
                 support@netprep.in
               </a>
+            </div>
+
+            <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs font-sans text-xs">
+              <span className="text-slate-500">Mentorship Leads</span>
+              <span className="font-bold text-slate-800">
+                Astha Jha & Sourabh Saw
+              </span>
             </div>
           </div>
         </div>

@@ -134,16 +134,15 @@ export const Footer: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-indigo-400 shrink-0" />
-                <div className="text-xs text-slate-300 flex flex-wrap gap-2">
-                  <a href="tel:9348766896" className="hover:text-indigo-300 font-mono transition-colors">
-                    9348766896
-                  </a>
-                  <span>|</span>
-                  <a href="tel:6370432509" className="hover:text-indigo-300 font-mono transition-colors">
-                    6370432509
-                  </a>
-                </div>
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a
+                  href="https://wa.me/91824992831?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-300 hover:text-emerald-400 font-mono transition-colors"
+                >
+                  WhatsApp: +91 824992831
+                </a>
               </div>
 
               <div className="flex items-center gap-2.5">

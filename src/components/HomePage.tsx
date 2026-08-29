@@ -164,7 +164,7 @@ export const HomePage: React.FC = () => {
               Featured Mock Tests
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              Each test contains 100 questions, 180 minutes duration, and 200 total marks.
+              Each test contains 100 questions, 120 minutes duration, and 200 total marks.
             </p>
           </div>
 
@@ -223,15 +223,15 @@ export const HomePage: React.FC = () => {
                   {/* Test Metrics */}
                   <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-center">
                     <div className="p-2 rounded-lg bg-slate-50">
-                      <p className="text-xs font-bold text-slate-800">100</p>
+                      <p className="text-xs font-bold text-slate-800">{test.totalQuestions || 100}</p>
                       <p className="text-[11px] text-slate-500">Questions</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50">
-                      <p className="text-xs font-bold text-slate-800">180</p>
+                      <p className="text-xs font-bold text-slate-800">{test.durationMinutes || 120}</p>
                       <p className="text-[11px] text-slate-500">Minutes</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-50">
-                      <p className="text-xs font-bold text-slate-800">200</p>
+                      <p className="text-xs font-bold text-slate-800">{test.totalMarks || 200}</p>
                       <p className="text-[11px] text-slate-500">Marks</p>
                     </div>
                   </div>
@@ -407,25 +407,30 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-5 bg-gradient-to-br from-indigo-50 to-blue-50/50 p-6 rounded-2xl border border-indigo-100 space-y-4">
+          <div className="lg:col-span-5 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-6 rounded-2xl border border-emerald-100 space-y-4">
             <h4 className="font-['Outfit'] font-bold text-base text-slate-900 flex items-center gap-2">
-              <Phone className="w-4 h-4 text-indigo-600" />
-              <span>Direct Student Support</span>
+              <Phone className="w-4 h-4 text-emerald-600" />
+              <span>Direct WhatsApp & Mentor Support</span>
             </h4>
             <p className="text-xs text-slate-600">
-              Have questions regarding mock tests, syllabus doubts, or technical issues? Contact our academic team:
+              Have questions regarding mock tests, syllabus doubts, or technical issues? Chat with our academic mentors:
             </p>
             <div className="space-y-2 font-mono text-sm">
               <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200">
-                <span className="text-xs font-sans text-slate-500">Helpline 1</span>
-                <a href="tel:9348766896" className="font-bold text-indigo-600 hover:underline">
-                  9348766896
+                <span className="text-xs font-sans text-slate-500">Official WhatsApp</span>
+                <a
+                  href="https://wa.me/91824992831?text=Hello%20NETPrep%2C%20I%20have%20a%20query%20regarding%20the%20UGC%20NET%20Economics%20Test%20Series."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-emerald-600 hover:text-emerald-800 hover:underline"
+                >
+                  +91 824992831
                 </a>
               </div>
               <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200">
-                <span className="text-xs font-sans text-slate-500">Helpline 2</span>
-                <a href="tel:6370432509" className="font-bold text-indigo-600 hover:underline">
-                  6370432509
+                <span className="text-xs font-sans text-slate-500">Official Email</span>
+                <a href="mailto:support@netprep.in" className="font-bold text-slate-800 hover:text-indigo-600 font-sans text-xs">
+                  support@netprep.in
                 </a>
               </div>
             </div>

@@ -104,3 +104,25 @@ export interface StudentProfile {
   averageAccuracy: number;
   currentRank: number;
 }
+
+export interface SubmittedTestRecord {
+  id: string;
+  studentName: string;
+  studentEmail?: string;
+  studentRoll?: string;
+  testId: number;
+  testTitle: string;
+  score: number;
+  totalMarks: number;
+  totalQuestions: number;
+  correctCount: number;
+  wrongCount: number;
+  unattemptedCount: number;
+  accuracy: number; // in %
+  percentile: number;
+  timeTakenMinutes: number;
+  timestamp: string;
+  formattedDate: string;
+  strongAreas?: string[];
+  weakAreas?: string[];
+}

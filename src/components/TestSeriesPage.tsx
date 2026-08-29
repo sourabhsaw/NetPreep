@@ -60,7 +60,7 @@ export const TestSeriesPage: React.FC = () => {
             </span>
             <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
               <Clock className="w-4 h-4 text-blue-400" />
-              180 Minutes (3 Hours)
+              120 Minutes (2 Hours)
             </span>
             <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
               <Award className="w-4 h-4 text-amber-400" />

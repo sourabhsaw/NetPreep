@@ -12,6 +12,8 @@ import { AnalyticsPage } from './components/AnalyticsPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { DashboardPage } from './components/DashboardPage';
 import { AboutContactPage } from './components/AboutContactPage';
+import { AdminScoresPage } from './components/AdminScoresPage';
+import { WhatsAppSupportWidget } from './components/WhatsAppSupportWidget';
 
 const AppContent: React.FC = () => {
   const { currentView, isTestActive } = useTest();
@@ -20,7 +22,7 @@ const AppContent: React.FC = () => {
   const isCBTExamMode = currentView === 'cbt_test' && isTestActive;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] relative">
       {!isCBTExamMode && <Navbar />}
 
       <main className="flex-1">
@@ -33,8 +35,12 @@ const AppContent: React.FC = () => {
         {currentView === 'analytics' && <AnalyticsPage />}
         {currentView === 'leaderboard' && <LeaderboardPage />}
         {currentView === 'dashboard' && <DashboardPage />}
+        {currentView === 'admin_scores' && <AdminScoresPage />}
         {currentView === 'about_contact' && <AboutContactPage />}
       </main>
+
+      {/* Floating WhatsApp Support Assistant */}
+      <WhatsAppSupportWidget />
 
       {!isCBTExamMode && <Footer />}
     </div>
@@ -48,3 +54,4 @@ export default function App() {
     </TestProvider>
   );
 }
+

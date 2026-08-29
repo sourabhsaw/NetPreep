@@ -19,7 +19,7 @@ export const InstructionsScreen: React.FC = () => {
 
   const testTitle = selectedTest?.title || 'UGC NET Economics — Mock Test 01';
   const totalQuestions = selectedTest?.totalQuestions || 100;
-  const durationMinutes = selectedTest?.durationMinutes || 180;
+  const durationMinutes = selectedTest?.durationMinutes || 120;
   const totalMarks = selectedTest?.totalMarks || 200;
 
   return (
@@ -84,7 +84,7 @@ export const InstructionsScreen: React.FC = () => {
             <p className="font-['Outfit'] font-bold text-xl sm:text-2xl text-slate-900 mt-0.5">
               {durationMinutes} Min
             </p>
-            <p className="text-[11px] text-slate-400">3 Hours Clock</p>
+            <p className="text-[11px] text-slate-400">2 Hours Live Clock</p>
           </div>
 
           <div className="p-4 sm:p-5 text-center">

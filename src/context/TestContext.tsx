@@ -5,7 +5,8 @@ import {
   UserAnswer,
   TestResult,
   StudentProfile,
-  QuestionState
+  QuestionState,
+  SubmittedTestRecord
 } from '../types';
 import { mockTest01Questions } from '../data/questionsData';
 import { MOCK_TESTS_CATALOG, INITIAL_STUDENT_PROFILE } from '../data/mockTestsData';
@@ -21,6 +22,7 @@ export type AppView =
   | 'analytics'
   | 'leaderboard'
   | 'dashboard'
+  | 'admin_scores'
   | 'about_contact';
 
 interface TestContextType {
@@ -41,6 +43,13 @@ interface TestContextType {
   bookmarks: number[];
   toggleBookmark: (questionId: number) => void;
   
+  // Admin Submitted Scores Log
+  submittedRecords: SubmittedTestRecord[];
+  deleteSubmittedRecord: (id: string) => void;
+  clearAllSubmittedRecords: () => void;
+  addSubmittedRecord: (record: SubmittedTestRecord) => void;
+  viewRecordResult: (record: SubmittedTestRecord) => void;
+
   // Test Action Handlers
   initiateTestStart: (test: MockTest) => void;
   confirmAndLaunchTest: () => void;
@@ -61,6 +70,93 @@ interface TestContextType {
   setSelectedTopicFilter: (topic: string) => void;
 }
 
+const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
+  {
+    id: 'rec_init_1',
+    studentName: 'Rahul Sharma',
+    studentEmail: 'rahul.ugcnet@example.com',
+    studentRoll: 'UGC-NET-2026-8941',
+    testId: 1,
+    testTitle: 'UGC NET Economics — Mock Test 01',
+    score: 142,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 71,
+    wrongCount: 19,
+    unattemptedCount: 10,
+    accuracy: 78,
+    percentile: 84.62,
+    timeTakenMinutes: 98,
+    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+    formattedDate: 'Today, 02:45 PM',
+    strongAreas: ['Indian Economy — 90%', 'Micro Economics — 87%'],
+    weakAreas: ['Econometrics — 50%', 'Statistics — 60%']
+  },
+  {
+    id: 'rec_init_2',
+    studentName: 'Ankit Deshmukh',
+    studentEmail: 'ankit.jrf@example.com',
+    studentRoll: 'UGC-NET-2026-3312',
+    testId: 1,
+    testTitle: 'UGC NET Economics — Mock Test 01',
+    score: 184,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 92,
+    wrongCount: 6,
+    unattemptedCount: 2,
+    accuracy: 94,
+    percentile: 99.4,
+    timeTakenMinutes: 105,
+    timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
+    formattedDate: 'Today, 10:15 AM',
+    strongAreas: ['Macro Economics — 96%', 'Mathematical Economics — 92%'],
+    weakAreas: ['Labour Economics — 66%']
+  },
+  {
+    id: 'rec_init_3',
+    studentName: 'Priya Mukherjee',
+    studentEmail: 'priya.mukh@example.com',
+    studentRoll: 'UGC-NET-2026-4489',
+    testId: 2,
+    testTitle: 'UGC NET Economics — Mock Test 02',
+    score: 178,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 89,
+    wrongCount: 8,
+    unattemptedCount: 3,
+    accuracy: 91,
+    percentile: 98.2,
+    timeTakenMinutes: 112,
+    timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
+    formattedDate: 'Yesterday, 04:30 PM',
+    strongAreas: ['International Economics — 90%', 'Money & Banking — 88%'],
+    weakAreas: ['Growth Economics — 60%']
+  },
+  {
+    id: 'rec_init_4',
+    studentName: 'Pooja Agarwal',
+    studentEmail: 'pooja.eco@example.com',
+    studentRoll: 'UGC-NET-2026-7821',
+    testId: 1,
+    testTitle: 'UGC NET Economics — Mock Test 01',
+    score: 156,
+    totalMarks: 200,
+    totalQuestions: 100,
+    correctCount: 78,
+    wrongCount: 14,
+    unattemptedCount: 8,
+    accuracy: 85,
+    percentile: 91.8,
+    timeTakenMinutes: 115,
+    timestamp: new Date(Date.now() - 3600000 * 48).toISOString(),
+    formattedDate: '2 days ago',
+    strongAreas: ['Public Economics — 85%', 'Micro Economics — 82%'],
+    weakAreas: ['Econometrics — 55%']
+  }
+];
+
 const TestContext = createContext<TestContextType | undefined>(undefined);
 
 export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -69,7 +165,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [questions, setQuestions] = useState<Question[]>(mockTest01Questions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, UserAnswer>>({});
-  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number>(180 * 60);
+  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number>(120 * 60);
   const [isTestActive, setIsTestActive] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testHistory, setTestHistory] = useState<TestResult[]>([]);
@@ -77,6 +173,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [solutionsFilter, setSolutionsFilter] = useState<'all' | 'wrong' | 'correct' | 'unattempted' | 'marked'>('all');
   const [selectedTopicFilter, setSelectedTopicFilter] = useState<string>('All');
+  const [submittedRecords, setSubmittedRecords] = useState<SubmittedTestRecord[]>([]);
 
   // Load persistence
   useEffect(() => {
@@ -89,10 +186,79 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const savedProfile = localStorage.getItem('netprep_student_profile');
       if (savedProfile) setStudentProfile(JSON.parse(savedProfile));
+
+      const savedAdminScores = localStorage.getItem('netprep_admin_submitted_scores');
+      if (savedAdminScores) {
+        setSubmittedRecords(JSON.parse(savedAdminScores));
+      } else {
+        setSubmittedRecords(DEFAULT_SAMPLE_SUBMISSIONS);
+        localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(DEFAULT_SAMPLE_SUBMISSIONS));
+      }
     } catch (e) {
       console.error('Error loading saved state', e);
     }
   }, []);
+
+  // Admin record management
+  const deleteSubmittedRecord = (id: string) => {
+    setSubmittedRecords((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
+      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const clearAllSubmittedRecords = () => {
+    setSubmittedRecords([]);
+    localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify([]));
+  };
+
+  const addSubmittedRecord = (record: SubmittedTestRecord) => {
+    setSubmittedRecords((prev) => {
+      const updated = [record, ...prev];
+      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const viewRecordResult = (record: SubmittedTestRecord) => {
+    // Reconstruct a TestResult object to view in result screen
+    const reconstructedResult: TestResult = {
+      testId: record.testId,
+      testTitle: record.testTitle,
+      completedAt: record.formattedDate,
+      score: record.score,
+      totalMarks: record.totalMarks,
+      totalQuestions: record.totalQuestions,
+      correctCount: record.correctCount,
+      wrongCount: record.wrongCount,
+      unattemptedCount: record.unattemptedCount,
+      markedForReviewCount: 2,
+      accuracy: record.accuracy,
+      percentile: record.percentile,
+      timeTakenMinutes: record.timeTakenMinutes,
+      userAnswers: {},
+      topicBreakdown: {
+        'Micro Economics': { total: 15, correct: 13, wrong: 2, unattempted: 0, accuracy: 87 },
+        'Macro Economics': { total: 15, correct: 11, wrong: 3, unattempted: 1, accuracy: 73 },
+        'Statistics': { total: 10, correct: 6, wrong: 4, unattempted: 0, accuracy: 60 },
+        'Econometrics': { total: 10, correct: 5, wrong: 4, unattempted: 1, accuracy: 50 },
+        'International Economics': { total: 10, correct: 8, wrong: 2, unattempted: 0, accuracy: 80 },
+        'Indian Economy': { total: 10, correct: 9, wrong: 1, unattempted: 0, accuracy: 90 },
+        'Public Economics': { total: 8, correct: 6, wrong: 2, unattempted: 0, accuracy: 75 },
+        'Money & Banking': { total: 8, correct: 6, wrong: 1, unattempted: 1, accuracy: 86 }
+      },
+      strongAreas: record.strongAreas || ['Indian Economy — 90%', 'Micro Economics — 87%'],
+      weakAreas: record.weakAreas || ['Econometrics — 50%', 'Statistics — 60%'],
+      recommendation: `Candidate ${record.studentName} performed well with ${record.accuracy}% accuracy. Recommend focusing on numerical problem-solving and weak topic revision.`
+    };
+
+    setTestResult(reconstructedResult);
+    const foundTest = MOCK_TESTS_CATALOG.find((t) => t.id === record.testId) || MOCK_TESTS_CATALOG[0];
+    setSelectedTest(foundTest);
+    setCurrentView('result');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Sync profile changes
   const updateStudentProfile = (newProfile: Partial<StudentProfile>) => {
@@ -176,9 +342,11 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
 
+    const testDurationMin = selectedTest?.durationMinutes || 120;
+
     setUserAnswers(initialAnswers);
     setCurrentQuestionIndex(0);
-    setTimeRemainingSeconds(180 * 60);
+    setTimeRemainingSeconds(testDurationMin * 60);
     setIsTestActive(true);
     setCurrentView('cbt_test');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -351,7 +519,8 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const scoreRatio = score / totalMarks;
     const percentile = Math.min(99.4, Math.max(45.0, Number((scoreRatio * 92 + 8.5).toFixed(2))));
     
-    const timeTakenSeconds = (180 * 60) - timeRemainingSeconds;
+    const testTotalDurationMin = selectedTest?.durationMinutes || 120;
+    const timeTakenSeconds = (testTotalDurationMin * 60) - timeRemainingSeconds;
     const timeTakenMinutes = Math.max(1, Math.round(timeTakenSeconds / 60));
 
     let recommendation = 'Practice more questions from Econometrics and Statistics to strengthen conceptual clarity.';
@@ -394,6 +563,42 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return updated;
     });
 
+    // Save student test score for Owner/Admin View
+    const newStudentLog: SubmittedTestRecord = {
+      id: 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      studentName: studentProfile.name || 'Rahul',
+      studentEmail: studentProfile.email || 'student@example.com',
+      studentRoll: studentProfile.rollNumber || 'UGC-NET-2026-8941',
+      testId: selectedTest?.id || 1,
+      testTitle: selectedTest?.title || 'UGC NET Economics — Mock Test 01',
+      score,
+      totalMarks,
+      totalQuestions,
+      correctCount,
+      wrongCount,
+      unattemptedCount,
+      accuracy,
+      percentile,
+      timeTakenMinutes,
+      timestamp: new Date().toISOString(),
+      formattedDate: new Date().toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
+      strongAreas: strongAreas.length > 0 ? strongAreas : ['Indian Economy — 90%', 'Micro Economics — 87%'],
+      weakAreas: weakAreas.length > 0 ? weakAreas : ['Econometrics — 50%', 'Statistics — 60%']
+    };
+
+    setSubmittedRecords((prev) => {
+      const updated = [newStudentLog, ...prev];
+      localStorage.setItem('netprep_admin_submitted_scores', JSON.stringify(updated));
+      return updated;
+    });
+
     setCurrentView('result');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -407,7 +612,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       // safe fallback
     }
-  }, [questions, userAnswers, selectedTest, timeRemainingSeconds]);
+  }, [questions, userAnswers, selectedTest, timeRemainingSeconds, studentProfile]);
 
   // Load the standard sample result (142/200, 78% accuracy, 71 correct, 19 wrong, 10 unattempted)
   const loadSampleResult = () => {
@@ -469,7 +674,7 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
       markedForReviewCount: 4,
       accuracy: 78,
       percentile: 84.62,
-      timeTakenMinutes: 137,
+      timeTakenMinutes: 98,
       userAnswers: simulatedAnswers,
       topicBreakdown: topicStats,
       strongAreas: [
@@ -518,6 +723,11 @@ export const TestProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateStudentProfile,
         bookmarks,
         toggleBookmark,
+        submittedRecords,
+        deleteSubmittedRecord,
+        clearAllSubmittedRecords,
+        addSubmittedRecord,
+        viewRecordResult,
         initiateTestStart,
         confirmAndLaunchTest,
         selectOption,
@@ -547,3 +757,4 @@ export const useTest = (): TestContextType => {
   }
   return context;
 };
+

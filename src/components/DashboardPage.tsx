@@ -15,7 +15,8 @@ import {
   RotateCcw,
   Sparkles,
   FileText,
-  Trash2
+  Trash2,
+  ShieldCheck
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -27,10 +28,15 @@ export const DashboardPage: React.FC = () => {
     bookmarks,
     questions,
     toggleBookmark,
-    setSolutionsFilter
+    setSolutionsFilter,
+    submittedRecords,
+    viewRecordResult
   } = useTest();
 
   const bookmarkedQuestionsList = questions.filter((q) => bookmarks.includes(q.id));
+
+  // Determine latest attempt
+  const latestRecord = submittedRecords[0];
 
   return (
     <div id="student-dashboard" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -57,10 +63,21 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-center md:self-auto">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                setCurrentView('admin_scores');
+                window.scrollTo(0, 0);
+              }}
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Admin Scores ({submittedRecords.length})</span>
+            </button>
+
             <button
               onClick={() => initiateTestStart(MOCK_TESTS_CATALOG[1])}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2"
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-colors flex items-center gap-2"
             >
               <Play className="w-4 h-4 fill-white" />
               <span>Resume Prep (Mock 02)</span>
@@ -79,9 +96,11 @@ export const DashboardPage: React.FC = () => {
             <BookOpen className="w-4 h-4 text-indigo-600" />
           </div>
           <p className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-slate-900">
-            {testResult ? 1 : 0} <span className="text-sm font-normal text-slate-500">/ 20</span>
+            {submittedRecords.length} <span className="text-sm font-normal text-slate-500">/ 20</span>
           </p>
-          <p className="text-[11px] text-indigo-600 font-semibold">Mock Test 01 completed</p>
+          <p className="text-[11px] text-indigo-600 font-semibold">
+            {submittedRecords.length > 0 ? `${submittedRecords.length} tests completed` : 'Start your first mock'}
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
@@ -90,9 +109,11 @@ export const DashboardPage: React.FC = () => {
             <Award className="w-4 h-4 text-amber-500" />
           </div>
           <p className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-indigo-600">
-            {testResult ? testResult.score : 142} <span className="text-sm font-normal text-slate-500">/ 200</span>
+            {latestRecord ? latestRecord.score : (testResult ? testResult.score : 142)} <span className="text-sm font-normal text-slate-500">/ 200</span>
           </p>
-          <p className="text-[11px] text-emerald-600 font-semibold">71% Score Ratio</p>
+          <p className="text-[11px] text-emerald-600 font-semibold">
+            {latestRecord ? `${Math.round((latestRecord.score / 200) * 100)}% Score Ratio` : '71% Score Ratio'}
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
@@ -101,9 +122,11 @@ export const DashboardPage: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="font-['Outfit'] font-bold text-2xl sm:text-3xl text-slate-900">
-            {testResult ? testResult.accuracy : 78}%
+            {latestRecord ? latestRecord.accuracy : (testResult ? testResult.accuracy : 78)}%
           </p>
-          <p className="text-[11px] text-slate-400">71 Correct / 90 Attempted</p>
+          <p className="text-[11px] text-slate-400">
+            {latestRecord ? `${latestRecord.correctCount} Correct / ${latestRecord.correctCount + latestRecord.wrongCount} Attempted` : '71 Correct / 90 Attempted'}
+          </p>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
@@ -124,62 +147,74 @@ export const DashboardPage: React.FC = () => {
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <h3 className="font-['Outfit'] font-bold text-lg text-slate-900">
-              Recent Test Attempts
+              Recent Test Attempts & Submitted Scores
             </h3>
             <p className="text-xs text-slate-500">Review your past test performance and question solutions</p>
           </div>
 
-          <button
-            onClick={() => { setCurrentView('tests'); window.scrollTo(0, 0); }}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-          >
-            <span>Take More Tests</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setCurrentView('admin_scores'); window.scrollTo(0, 0); }}
+              className="text-xs font-bold text-slate-600 hover:text-indigo-600 flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>All Admin Logs ({submittedRecords.length})</span>
+            </button>
+
+            <button
+              onClick={() => { setCurrentView('tests'); window.scrollTo(0, 0); }}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            >
+              <span>Take More Tests</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
-          <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
-                  Moderate
-                </span>
-                <span className="text-xs text-slate-500">
-                  Attempted on Today, 137 min
-                </span>
+          {submittedRecords.slice(0, 4).map((record) => (
+            <div
+              key={record.id}
+              className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                    {record.score >= 160 ? 'JRF Qualified' : 'Completed'}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {record.formattedDate || 'Recent'} • {record.timeTakenMinutes} min taken
+                  </span>
+                </div>
+                <h4 className="font-['Outfit'] font-bold text-base text-slate-900">
+                  {record.testTitle}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Candidate: <strong className="text-slate-700">{record.studentName}</strong> • Score: <strong className="text-indigo-600 font-mono">{record.score}/200</strong> (Accuracy: {record.accuracy}%, {record.percentile}%ile)
+                </p>
               </div>
-              <h4 className="font-['Outfit'] font-bold text-base text-slate-900">
-                UGC NET Economics — Mock Test 01
-              </h4>
-              <p className="text-xs text-slate-500">
-                100 Questions • 200 Marks • Score: <strong className="text-indigo-600 font-mono">142/200</strong> (Accuracy: 78%)
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => {
-                  setCurrentView('result');
-                  window.scrollTo(0, 0);
-                }}
-                className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-2xs"
-              >
-                View Scorecard
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => viewRecordResult(record)}
+                  className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-2xs"
+                >
+                  View Scorecard
+                </button>
 
-              <button
-                onClick={() => {
-                  setSolutionsFilter('wrong');
-                  setCurrentView('solutions');
-                  window.scrollTo(0, 0);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
-              >
-                Review Mistakes
-              </button>
+                <button
+                  onClick={() => {
+                    setSolutionsFilter('wrong');
+                    setCurrentView('solutions');
+                    window.scrollTo(0, 0);
+                  }}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+                >
+                  Review Mistakes
+                </button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -257,3 +292,4 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
+
