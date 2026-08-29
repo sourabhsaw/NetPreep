@@ -9,7 +9,7 @@ import {
   SubmittedTestRecord,
   ExamSubject
 } from '../types';
-import { getQuestionsForTest, mockTest01Questions } from '../data/questionsData';
+import { getQuestionsForTest, mockTest01Questions, mockTest4Questions } from '../data/questionsData';
 import { MOCK_TESTS_CATALOG, INITIAL_STUDENT_PROFILE } from '../data/mockTestsData';
 import {
   initAuth,
@@ -88,6 +88,33 @@ interface TestContextType {
 }
 
 const DEFAULT_SAMPLE_SUBMISSIONS: SubmittedTestRecord[] = [
+  {
+    id: 'rec_init_dec25_4',
+    studentName: 'Aayush Vardhan',
+    phoneNumber: '9833445566',
+    phone: '9833445566',
+    email: 'aayush.jrf25@example.com',
+    studentEmail: 'aayush.jrf25@example.com',
+    studentRoll: 'UGC-NET-2026-1104',
+    testId: 4,
+    testTitle: 'UGC NET Dec 2025 — Mock Test 04 (Paper 1 + Paper 2)',
+    subject: 'Economics',
+    score: 248,
+    maxScore: 300,
+    totalMarks: 300,
+    totalQuestions: 150,
+    correctCount: 124,
+    wrongCount: 18,
+    unattemptedCount: 8,
+    accuracy: 87,
+    percentile: 98.9,
+    timeTaken: '162 min',
+    timeTakenMinutes: 162,
+    timestamp: new Date(Date.now() - 3600000 * 0.5).toISOString(),
+    formattedDate: 'Today, 04:15 PM',
+    strongAreas: ['Paper 1: Research Aptitude — 90%', 'Econometrics — 88%', 'Macro Economics — 86%'],
+    weakAreas: ['Mathematical Economics — 60%']
+  },
   {
     id: 'rec_init_cs_1',
     studentName: 'Vikramaditya Roy',

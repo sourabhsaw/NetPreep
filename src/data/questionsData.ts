@@ -2,7 +2,7 @@ import { Question } from '../types';
 import { mockTest01Questions } from './mockTest01';
 import { mockTest02Questions } from './mockTest02';
 import { mockTest03Questions } from './mockTest03';
-import { mockTest04Questions } from './mockTest04';
+import { mockTest4Questions, mockTest04Questions } from './mockTest4';
 import { csMockTest01Questions } from './csMockTest01';
 import { csMockTest02Questions } from './csMockTest02';
 
@@ -10,6 +10,7 @@ export {
   mockTest01Questions,
   mockTest02Questions,
   mockTest03Questions,
+  mockTest4Questions,
   mockTest04Questions,
   csMockTest01Questions,
   csMockTest02Questions

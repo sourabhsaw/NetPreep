@@ -75,18 +75,18 @@ export const MOCK_TESTS_CATALOG: MockTest[] = [
   },
   {
     id: 4,
-    title: 'UGC NET Economics — Mock Test 04',
+    title: 'UGC NET Dec 2025 — Mock Test 04 (Paper 1 + Paper 2)',
     subject: 'Economics',
     subjectCode: '01',
-    description: 'Full-length 100-question mock test covering all 10 core units with special focus on Advanced Micro/Macro, Econometrics, and Indian Economic Policies.',
-    totalQuestions: 100,
-    durationMinutes: 120,
-    totalMarks: 200,
+    description: 'Complete 150-question full-length UGC NET Dec 2025 pattern test: Q1-Q50 General Paper 1 (Teaching & Research Aptitude) + Q51-Q150 Economics Core Syllabus.',
+    totalQuestions: 150,
+    durationMinutes: 180,
+    totalMarks: 300,
     difficulty: 'Moderate',
     isFree: false,
     category: 'Full Mock',
-    topicsCovered: ALL_ECONOMICS_TOPICS,
-    attemptsCount: 1890
+    topicsCovered: ['Paper 1 (General Paper)', ...ALL_ECONOMICS_TOPICS],
+    attemptsCount: 3120
   },
   {
     id: 5,
